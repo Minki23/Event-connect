@@ -64,15 +64,6 @@ fun MainScreen() {
 }
 
 // Example placeholders for actual screens
-@Composable
-fun HomeScreen() {
-    Text("Home Screen")
-}
-
-@Composable
-fun AddEventScreen() {
-    Text("Add Event Screen")
-}
 
 @Composable
 fun ProfileScreen() {

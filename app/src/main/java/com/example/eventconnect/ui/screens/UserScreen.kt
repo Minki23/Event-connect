@@ -15,6 +15,6 @@ fun UserScreen(viewModel: UserViewModel = viewModel()) {
     if (viewModel.user == null) {
         Text("Loading...")
     } else {
-        Text("User: ${viewModel.user?.name}")
+        Text("User: ${viewModel.user?.username}")
     }
 }

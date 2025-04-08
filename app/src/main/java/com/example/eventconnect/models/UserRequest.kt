@@ -1,7 +1,6 @@
 package com.example.eventconnect.models
 
-data class User(
-    val id: Int,
+data class UserRequest(
     val username: String,
     val email: String,
     val password: String

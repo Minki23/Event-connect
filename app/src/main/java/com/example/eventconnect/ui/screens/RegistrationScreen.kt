@@ -9,24 +9,29 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.eventconnect.models.User
+import com.example.eventconnect.ui.data.UserViewModel
 import com.example.eventconnect.ui.theme.blue
 
 @Composable
 fun RegistrationScreen(
-    onSignUpClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {}
+    onSignUpClick: (user: User?) -> Unit = {},
+    onLoginClick: () -> Unit = {},
+    navController: NavController
 ) {
     var name by remember { mutableStateOf(TextFieldValue("")) }
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
     var confirmPassword by remember { mutableStateOf(TextFieldValue("")) }
     var termsChecked by remember { mutableStateOf(false) }
-
+    val myViewModel = UserViewModel()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -141,7 +146,13 @@ fun RegistrationScreen(
 
             // Sign Up button
             Button(
-                onClick = onSignUpClick,
+                onClick = {
+                            if(password.text == confirmPassword.text && termsChecked){
+                                myViewModel.user = User(id = 0,username = name.text, email = email.text, password = password.text)
+                                onSignUpClick(myViewModel.user)
+                                navController.navigate("main")
+                            }
+                          },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = blue),
                 modifier = Modifier
@@ -183,6 +194,6 @@ fun RegistrationScreen(
 @Composable
 fun RegistrationScreenPreview() {
     MaterialTheme {
-        RegistrationScreen()
+        RegistrationScreen(onSignUpClick = {}, onLoginClick = {}, navController = NavController(LocalContext.current))
     }
 }

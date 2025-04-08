@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.eventconnect.ui.data.UserViewModel
 import com.example.eventconnect.ui.screens.LoginScreen
 import com.example.eventconnect.ui.screens.MainScreen
 import com.example.eventconnect.ui.screens.RegistrationScreen
@@ -13,7 +14,7 @@ import com.example.eventconnect.ui.screens.WelcomeScreen
 @Composable
 fun MainNavigation(innerPadding: PaddingValues) {
     val navController = rememberNavController()
-
+    val viewModel = UserViewModel()
     NavHost(
         navController = navController,
         startDestination = "welcome"
@@ -33,8 +34,11 @@ fun MainNavigation(innerPadding: PaddingValues) {
         }
         composable("register") {
             RegistrationScreen(
-                onSignUpClick = { navController.navigate("main") },
-                onLoginClick = { navController.navigate("login") }
+                onSignUpClick = { user ->
+                                navController.navigate("main")
+                                },
+                onLoginClick = { navController.navigate("login") },
+                navController = navController
             )
         }
         composable("main") {
