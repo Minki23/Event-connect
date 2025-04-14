@@ -7,7 +7,7 @@ import com.example.eventconnect.models.UserRequest
 import kotlinx.coroutines.launch
 
 class UserViewModel : ViewModel() {
-    var user: User? = null
+    var user: User? = User(id = 0,username = "Michal", email = "Michal@gmail.com", password = "12345678", avatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d")
         internal set
 
     fun fetchUser(userId: Int) {

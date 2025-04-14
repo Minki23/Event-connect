@@ -16,7 +16,7 @@ import com.example.eventconnect.ui.theme.EventConnectTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.People
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +26,7 @@ fun MainScreen() {
     val bottomNavItems = listOf(
         BottomNavItem("home", "Home", Icons.Default.Home),
         BottomNavItem("add_event", "Add Event", Icons.Default.Add),
-        BottomNavItem("profile", "Profile", Icons.Default.Person)
+        BottomNavItem("friends", "Friends", Icons.Default.People)
     )
 
     Scaffold(
@@ -56,14 +56,15 @@ fun MainScreen() {
             composable("add_event") {
                 AddEventScreen()
             }
+            composable("friends") {
+                FriendsScreen()
+            }
             composable("profile") {
                 UserScreen()
             }
         }
     }
 }
-
-// Example placeholders for actual screens
 
 @Composable
 fun ProfileScreen() {

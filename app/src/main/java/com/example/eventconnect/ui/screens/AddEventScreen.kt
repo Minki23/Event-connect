@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.view.ContextThemeWrapper
 import java.util.Calendar
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,18 +30,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.eventconnect.ui.theme.blue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.rememberImagePainter
 
 @Composable
 fun AddEventScreen() {
     var eventName by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf("18/03/2025") }
-    var selectedTime by remember { mutableStateOf("18:30") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        selectedImageUri = uri
+    }
     Column(
         modifier = Modifier
+            .verticalScroll(rememberScrollState())
             .fillMaxSize()
-            .background(Color.Black)
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -54,9 +69,21 @@ fun AddEventScreen() {
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-
+        selectedImageUri?.let { uri ->
+            Image(
+                painter = rememberImagePainter(uri),
+                contentDescription = "Selected image",
+                modifier = Modifier
+                    .padding(16.dp)
+                    .height(150.dp)
+            )
+        }
         Button(
-            onClick = { /* Handle photo upload */ },
+            onClick = {
+                photoPickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
             colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF007BFF)),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -100,54 +127,79 @@ fun AddEventScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         val context = LocalContext.current
+        context.setTheme(android.R.style.Theme_DeviceDefault)
         val calendar = remember { Calendar.getInstance() }
 
         var selectedDate by remember { mutableStateOf("18/03/2025") }
         var selectedTime by remember { mutableStateOf("18:30") }
+        Row() {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Date:", color = Color.White, fontSize = 16.sp)
 
-        Text(text = "Date:", color = Color.White, fontSize = 16.sp)
-
-        Button(
-            onClick = {
-                DatePickerDialog(
-                    context,
-                    { _, year, month, dayOfMonth ->
-                        val formattedDate = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
-                        selectedDate = formattedDate
+                Button(
+                    onClick = {
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                val formattedDate =
+                                    String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+                                selectedDate = formattedDate
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
                     },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-                ).show()
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = blue),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(selectedDate, color = Color.White)
-        }
+                    colors = ButtonDefaults.buttonColors(containerColor = blue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(selectedDate, color = Color.White)
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Time:", color = Color.White, fontSize = 16.sp)
 
+                Button(
+                    onClick = {
+                        TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val formattedTime = String.format("%02d:%02d", hourOfDay, minute)
+                                selectedTime = formattedTime
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        ).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = blue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(selectedTime, color = Color.White)
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(24.dp))
-
-        Text(text = "Time:", color = Color.White, fontSize = 16.sp)
-
         Button(
             onClick = {
-                TimePickerDialog(
-                    context,
-                    { _, hourOfDay, minute ->
-                        val formattedTime = String.format("%02d:%02d", hourOfDay, minute)
-                        selectedTime = formattedTime
-                    },
-                    calendar.get(Calendar.HOUR_OF_DAY),
-                    calendar.get(Calendar.MINUTE),
-                    true
-                ).show()
+                // Handle add event logic here
             },
             colors = ButtonDefaults.buttonColors(containerColor = blue),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(selectedTime, color = Color.White)
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .width(120.dp)
+                .height(48.dp)
+        )
+        {
+            Text(text = "Add Event", color = Color.White)
         }
-
     }
 }
+

@@ -60,7 +60,6 @@ fun RegistrationScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Name TextField
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -74,7 +73,6 @@ fun RegistrationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Email TextField
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -88,7 +86,6 @@ fun RegistrationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password TextField
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -104,7 +101,6 @@ fun RegistrationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Confirm Password TextField
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -120,7 +116,6 @@ fun RegistrationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Terms & Conditions checkbox
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -144,11 +139,10 @@ fun RegistrationScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Sign Up button
             Button(
                 onClick = {
                             if(password.text == confirmPassword.text && termsChecked){
-                                myViewModel.user = User(id = 0,username = name.text, email = email.text, password = password.text)
+                                myViewModel.user = User(id = 0,username = name.text, email = email.text, password = password.text, avatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d")
                                 onSignUpClick(myViewModel.user)
                                 navController.navigate("main")
                             }

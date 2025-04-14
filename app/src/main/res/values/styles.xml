@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="blueTimePickerDialog" parent="Theme.MaterialComponents.DayNight.Dialog">
-        <item name="colorPrimary">#007BFF</item>
-        <item name="colorPrimaryVariant">#005FCC</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+    <!-- res/values/styles.xml -->
+    <style name="CustomDatePickerDialogTheme" parent="ThemeOverlay.MaterialComponents.TimePicker">
+        <!-- Override primary color, header background, etc. -->
+        <item name="colorPrimary">@color/blue</item>
+        <item name="android:datePickerStyle">@style/CustomDatePickerStyle</item>
     </style>
+
+    <style name="CustomDatePickerStyle" parent="android:Widget.Material.DatePicker">
+        <!-- Customize header, calendar background, text colors -->
+        <item name="android:headerBackground">@color/blue</item>
+        <item name="android:calendarTextColor">@color/white</item>
+    </style>
+
+
 </resources>

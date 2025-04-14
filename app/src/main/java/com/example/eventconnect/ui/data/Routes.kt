@@ -4,4 +4,5 @@ enum class Routes(val route: String) {
     Registration(route = "registration_screen"),
     Login(route = "login_screen"),
     Welcome(route = "welcome_screen"),
+    Profile(route = "user_screen")
 }

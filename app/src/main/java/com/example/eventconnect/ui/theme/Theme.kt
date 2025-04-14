@@ -17,21 +17,21 @@ val BluePrimaryVariant = Color(0xFF005FCC)
 val BlueOnPrimary = Color(0xFFFFFFFF)
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    onPrimary = BlueOnPrimary, // Add the new primary color
-    primaryContainer = BluePrimary,
+    primary = blue,
+    secondary = blue,
+    tertiary = blue,
+    onPrimary = blue, // Add the new primary color
+    primaryContainer = blue,
 )
 
 
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    onPrimary = BlueOnPrimary,
-    primaryContainer = BluePrimary,
+    primary = blue,
+    secondary = blue,
+    tertiary = blue,
+    onPrimary = blue,
+    primaryContainer = blue,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
