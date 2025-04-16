@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
             // Your server's client ID, not your Android client ID.
             .setServerClientId(getString(R.string.default_web_client_id))
             // Only show accounts previously used to sign in.
-            .setFilterByAuthorizedAccounts(true)
+            .setFilterByAuthorizedAccounts(false)
             .build()
 
         // Create the Credential Manager request
@@ -93,7 +93,9 @@ class MainActivity : ComponentActivity() {
                 // Extract credential from the result returned by Credential Manager
                 handleSignIn(result.credential)
             } catch (e: GetCredentialException) {
-                Log.e(TAG, "Couldn't retrieve user's credentials: ${e.localizedMessage}")
+                Log.e(TAG, "Credential error type: ${e::class.java.simpleName}")
+                Log.e(TAG, "Detailed message: ${e.localizedMessage}")
+                e.printStackTrace()
             }
         }
     }
