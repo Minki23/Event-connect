@@ -39,96 +39,22 @@ fun LoginScreen(
     onSignUpClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Access Account",
-            fontSize = 28.sp,
-            color = Color.White,
-        )
-        Text(text = "Please log in to continue", modifier = Modifier.padding(bottom = 32.dp))
+        Text("Zaloguj się")
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.End
-        ) {
-            Text(
-            text = "Forgot Password?",
-            color = blue,
-            modifier = Modifier
-                .clickable {
-                    Toast
-                        .makeText(context,"Forgot Password", Toast.LENGTH_SHORT)
-                        .show()
-                }
-        ) }
-
-        Button(
-                onClick = {
-                onLoginClick()
-            },
-            colors = ButtonDefaults.buttonColors(blue),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-
-        ) {
-            Text(
-                text = "Log in",
-                color = Color.White
-            )
+        Button(onClick = onLoginClick) {
+            Text("Zaloguj się przez Google")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Don't have an account?",
-                color = Color.White
-            )
-            TextButton(
-                onClick = {
-                    onSignUpClick()
-                },
-                shape = RoundedCornerShape(8.dp),
-            ) {
-                Text(
-                    text = "Sign Up",
-                    color = blue
-                )
-            }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(onClick = onSignUpClick) {
+            Text("Nie masz konta? Zarejestruj się")
         }
     }
 }

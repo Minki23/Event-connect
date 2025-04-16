@@ -1,5 +1,6 @@
 package com.example.eventconnect.ui.screens
 
+import android.util.Log
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.eventconnect.ui.components.BottomNavBar
 import com.example.eventconnect.ui.components.BottomNavItem
@@ -17,10 +18,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.People
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
+    val user = FirebaseAuth.getInstance().currentUser
+    user?.let {
+        Log.d("MainScreen", "UID: ${it.uid}")
+        Log.d("MainScreen", "Name: ${it.displayName}")
+        Log.d("MainScreen", "Email: ${it.email}")
+        Log.d("MainScreen", "Photo URL: ${it.photoUrl}")
+    } ?: run {
+        Log.d("MainScreen", "No user is signed in.")
+    }
     val navController = rememberNavController()
 
     val bottomNavItems = listOf(
