@@ -20,7 +20,6 @@ fun MainNavigation(innerPadding: PaddingValues, navController: NavHostController
     ) {
         composable("login") {
             LoginScreen(
-                onSignUpClick = { navController.navigate("register") },
                 onLoginClick = { onGoogleLogin() }
             )
         }

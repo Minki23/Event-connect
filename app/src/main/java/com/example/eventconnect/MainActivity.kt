@@ -1,5 +1,7 @@
 package com.example.eventconnect
 
+import LocalFirestore
+import LocalStorage
 import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,6 +36,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -47,20 +51,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        db = FirebaseFirestore.getInstance()
         auth = Firebase.auth
         credentialManager = CredentialManager.create(baseContext)
 
         enableEdgeToEdge()
         setContent {
-            EventConnectTheme {
-                navController = rememberNavController()
-                Scaffold(
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    MainNavigation(innerPadding = innerPadding,
-                        navController = navController,
-                        onGoogleLogin = { launchCredentialManager() })
+            CompositionLocalProvider(
+                LocalFirestore provides db,
+                LocalStorage provides FirebaseStorage.getInstance()
+            ) {
+                EventConnectTheme {
+                    navController = rememberNavController()
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize()
+                    ) { innerPadding ->
+                        MainNavigation(
+                            innerPadding = innerPadding,
+                            navController = navController,
+                            onGoogleLogin = { launchCredentialManager() })
+                    }
                 }
             }
         }

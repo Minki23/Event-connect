@@ -14,8 +14,8 @@ import com.example.eventconnect.ui.data.Event
 @Composable
 fun HomeScreen() {
     val events = listOf(
-        Event("Art Expo", "January 15, 2024", null),
-        Event("Joga retreat", "January 15, 2024", null),
+        Event("Art Expo", "January 15, 2024", "", description = "elo zelo"),
+        Event("Joga retreat", "January 15, 2024", "", description = "elo zelo"),
         Event("Art Expo", "January 15, 2024", "https://images.unsplash.com/photo-1549576490-b0b4831ef60a"),
         Event("Art Expo", "January 15, 2024", "https://images.unsplash.com/photo-1509223197845-458d87318791")
     )
@@ -27,7 +27,7 @@ fun HomeScreen() {
     ) {
         items(events) { event ->
             EventCard(
-                title = event.title,
+                title = event.name,
                 date = event.date,
                 imageUrl = event.imageUrl
             )

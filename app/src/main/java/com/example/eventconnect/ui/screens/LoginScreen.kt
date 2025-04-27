@@ -36,7 +36,6 @@ import com.example.eventconnect.ui.theme.blue
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onSignUpClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
     Column(
@@ -52,9 +51,5 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = onSignUpClick) {
-            Text("Nie masz konta? Zarejestruj się")
-        }
     }
 }
