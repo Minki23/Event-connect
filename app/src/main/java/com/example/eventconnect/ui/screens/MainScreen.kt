@@ -26,7 +26,8 @@ fun MainScreen() {
     val bottomNavItems = listOf(
         BottomNavItem("home", "Home", Icons.Default.Home),
         BottomNavItem("add_event", "Add Event", Icons.Default.Add),
-        BottomNavItem("profile", "Profile", Icons.Default.Person)
+        BottomNavItem("profile", "Profile", Icons.Default.Person),
+        BottomNavItem("friends", "Friends", Icons.Default.Person)
     )
 
     Scaffold(
@@ -58,6 +59,9 @@ fun MainScreen() {
             }
             composable("profile") {
                 UserScreen()
+            }
+            composable("friends"){
+                Text("Friends")
             }
         }
     }

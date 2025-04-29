@@ -36,7 +36,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.Event
+import com.example.eventconnect.ui.data.SimpleUser
 import com.example.eventconnect.ui.theme.blue
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
@@ -46,6 +49,7 @@ import java.util.*
 fun AddEventScreen(
     onNavigateBack: () -> Unit = {}
 ) {
+    val user = FirebaseAuth.getInstance().currentUser
     val context = LocalContext.current
     val db = LocalFirestore.current
     val storage = LocalStorage.current
@@ -268,30 +272,33 @@ fun AddEventScreen(
 
                     // wywołaj dodanie eventu
                     isLoading = true
-                    viewModel.addEvent(
-                        name = eventName,
-                        location = location,
-                        description = description,
-                        date = selectedDate,
-                        time = selectedTime,
-                        imageUri = uploadUri,
-                        onSuccess = {
-                            isLoading = false
-                            Toast.makeText(context, "Event added successfully", Toast.LENGTH_SHORT).show()
-                            onNavigateBack()
-                            eventName = ""
-                            location = ""
-                            description = ""
-                            selectedDate = "18/03/2025"
-                            selectedTime = "18:30"
-                            photoUri = null
-                            currentPhotoUri = null
-                        },
-                        onError = { errorMessage ->
-                            isLoading = false
-                            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
-                        }
-                    )
+                    if (user != null) {
+                        viewModel.addEvent(
+                            name = eventName,
+                            location = location,
+                            description = description,
+                            date = selectedDate,
+                            time = selectedTime,
+                            imageUri = uploadUri,
+                            host = user,
+                            onSuccess = {
+                                isLoading = false
+                                Toast.makeText(context, "Event added successfully", Toast.LENGTH_SHORT).show()
+                                onNavigateBack()
+                                eventName = ""
+                                location = ""
+                                description = ""
+                                selectedDate = "18/03/2025"
+                                selectedTime = "18:30"
+                                photoUri = null
+                                currentPhotoUri = null
+                            },
+                            onError = { errorMessage ->
+                                isLoading = false
+                                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = blue),
                 shape = RoundedCornerShape(12.dp),
@@ -340,6 +347,7 @@ class EventViewModel(
         date: String,
         time: String,
         imageUri: Uri?,
+        host: FirebaseUser,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
@@ -356,7 +364,7 @@ class EventViewModel(
                     if (task.isSuccessful) {
                         saveEventToFirestore(
                             eventId, name, location, description, date, time,
-                            task.result.toString(), onSuccess, onError
+                            task.result.toString(), host, onSuccess, onError
                         )
                     } else {
                         onError("Failed to upload image: ${task.exception?.message}")
@@ -364,7 +372,7 @@ class EventViewModel(
                 }
         } else {
             // bez zdjęcia
-            saveEventToFirestore(eventId, name, location, description, date, time, "", onSuccess, onError)
+            saveEventToFirestore(eventId, name, location, description, date, time, "", host, onSuccess, onError)
         }
     }
 
@@ -376,10 +384,13 @@ class EventViewModel(
         date: String,
         time: String,
         imageUrl: String,
+        host: FirebaseUser,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val event = Event(eventId, name, location, description, date, time, imageUrl)
+        val event = Event(eventId, name, location, description, date, time, imageUrl, host.uid, listOf(
+            SimpleUser(host.uid, host.displayName, host.email, host.photoUrl.toString())
+        ))
         db.collection("events")
             .document(eventId)
             .set(event)
