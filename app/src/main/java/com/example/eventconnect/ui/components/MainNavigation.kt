@@ -9,14 +9,16 @@ import androidx.navigation.compose.composable
 import com.example.eventconnect.ui.data.UserViewModel
 import com.example.eventconnect.ui.screens.LoginScreen
 import com.example.eventconnect.ui.screens.MainScreen
+import com.google.firebase.auth.FirebaseAuth
 
 
 @Composable
 fun MainNavigation(innerPadding: PaddingValues, navController: NavHostController, onGoogleLogin: () -> Unit) {
-    val viewModel = UserViewModel()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val startDestination = if (currentUser != null) "main" else "login"
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
         composable("login") {
             LoginScreen(

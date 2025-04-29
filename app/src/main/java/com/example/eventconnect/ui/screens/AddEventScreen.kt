@@ -282,6 +282,10 @@ fun AddEventScreen(
                             eventName = ""
                             location = ""
                             description = ""
+                            selectedDate = "18/03/2025"
+                            selectedTime = "18:30"
+                            photoUri = null
+                            currentPhotoUri = null
                         },
                         onError = { errorMessage ->
                             isLoading = false

@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CompositionLocalProvider(
                 LocalFirestore provides db,
-                LocalStorage provides FirebaseStorage.getInstance()
+                LocalStorage provides FirebaseStorage.getInstance(),
             ) {
                 EventConnectTheme {
                     navController = rememberNavController()
@@ -139,9 +139,56 @@ class MainActivity : ComponentActivity() {
     }
     private fun updateUI(user: FirebaseUser?) {
         if (user != null) {
+            // Save user data to Firestore
+            saveUserToFirestore(user)
+
+            // Navigate to main screen
             navController.navigate("main") {
-                popUpTo("login") { inclusive = true } // opcjonalnie: usuń z backstacka
+                popUpTo("login") { inclusive = true }
             }
         }
+    }
+
+    private fun saveUserToFirestore(user: FirebaseUser) {
+        // Create a user map with the user data
+        val userData = hashMapOf(
+            "uid" to user.uid,
+            "email" to user.email,
+            "displayName" to user.displayName,
+            "photoUrl" to user.photoUrl?.toString(),
+            "lastLogin" to System.currentTimeMillis()
+        )
+
+        // Reference to the users collection
+        val usersCollection = db.collection("users")
+
+        // Check if user document already exists
+        usersCollection.document(user.uid).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    // Update existing user
+                    usersCollection.document(user.uid)
+                        .update("lastLogin", System.currentTimeMillis())
+                        .addOnSuccessListener {
+                            Log.d(TAG, "User login time updated successfully")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e(TAG, "Error updating user login time", e)
+                        }
+                } else {
+                    // Create new user
+                    usersCollection.document(user.uid)
+                        .set(userData)
+                        .addOnSuccessListener {
+                            Log.d(TAG, "User added to Firestore successfully")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e(TAG, "Error adding user to Firestore", e)
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error checking for existing user", e)
+            }
     }
 }
