@@ -1,27 +1,26 @@
-import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material3.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import java.io.File
@@ -55,20 +54,17 @@ fun UploadPhotoButton(context: Context) {
 
     Button(
         onClick = {
-            // Pokazujemy wybór: galeria czy aparat
             val options = listOf("Wybierz z galerii", "Zrób nowe zdjęcie")
             androidx.appcompat.app.AlertDialog.Builder(context)
                 .setTitle("Wybierz opcję")
                 .setItems(options.toTypedArray()) { _, which ->
                     when (which) {
                         0 -> {
-                            // Galeria
                             galleryLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         }
                         1 -> {
-                            // Aparat
                             val photoFile = createImageFile(context)
                             currentPhotoUri = FileProvider.getUriForFile(
                                 context,
@@ -90,12 +86,10 @@ fun UploadPhotoButton(context: Context) {
     }
 }
 
-// Funkcja pomocnicza do tworzenia pliku na zdjęcie
 fun createImageFile(context: Context): File {
     val storageDir: File? = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
     return File.createTempFile(
-        "JPEG_${System.currentTimeMillis()}_", /* prefix */
-        ".jpg", /* suffix */
-        storageDir /* directory */
+        "JPEG_${System.currentTimeMillis()}_",
+        ".jpg",
     )
 }

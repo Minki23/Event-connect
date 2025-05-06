@@ -26,7 +26,6 @@ fun MainScreen() {
     val bottomNavItems = listOf(
         BottomNavItem("home", "Home", Icons.Default.Home),
         BottomNavItem("add_event", "Add Event", Icons.Default.Add),
-        BottomNavItem("profile", "Profile", Icons.Default.Person),
         BottomNavItem("friends", "Friends", Icons.Default.Person)
     )
 
@@ -61,15 +60,15 @@ fun MainScreen() {
                 UserScreen()
             }
             composable("friends"){
-                Text("Friends")
+                FriendsScreen(navigateToInvitations = {
+                    navController.navigate("invitations")
+                })
+            }
+            composable("invitations"){
+                InvitationsScreen(onBack = {
+                    navController.popBackStack()
+                })
             }
         }
     }
-}
-
-// Example placeholders for actual screens
-
-@Composable
-fun ProfileScreen() {
-    Text("Profile Screen")
 }

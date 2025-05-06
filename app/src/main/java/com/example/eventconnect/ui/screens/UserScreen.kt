@@ -32,21 +32,15 @@ fun UserScreen(viewModel: UserViewModel = viewModel()) {
         viewModel.fetchUser(1)
     }
 
-    // Fill the screen with a gradient background for a cooler appearance
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF2C3E50),
-                        Color(0xFF4CA1AF)
-                    )
-                )
+                color = Color.Blue,
             )
     ) {
         if (viewModel.user == null) {
-            // Display a centered progress indicator while loading
+
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -55,7 +49,6 @@ fun UserScreen(viewModel: UserViewModel = viewModel()) {
             }
         } else {
             val user = viewModel.user!!
-            // Center all content in a Column that fills all space
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -63,7 +56,6 @@ fun UserScreen(viewModel: UserViewModel = viewModel()) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Load the user's avatar with a placeholder image
                 val painter = rememberAsyncImagePainter(
                     model = user.avatarUrl,
                     placeholder = painterResource(id = R.mipmap.placeholder),

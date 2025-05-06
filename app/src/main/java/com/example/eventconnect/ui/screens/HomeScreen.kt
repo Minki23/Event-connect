@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import com.example.eventconnect.ui.components.EventCard
 import com.example.eventconnect.ui.data.Event
 import com.example.eventconnect.ui.theme.blue
@@ -86,7 +87,7 @@ fun HomeScreen() {
     }
 }
 
-class HomeViewModel(private val db: FirebaseFirestore) {
+class HomeViewModel(private val db: FirebaseFirestore) : ViewModel() {
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     val events = _events.asStateFlow()
 
