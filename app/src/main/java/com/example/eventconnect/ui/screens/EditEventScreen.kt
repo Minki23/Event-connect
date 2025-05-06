@@ -1,5 +1,7 @@
 package com.example.eventconnect.ui.screens
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.EventViewModel
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,8 +50,7 @@ fun EditEventScreen(
     var time by remember { mutableStateOf("") }
     var currentImageUrl by remember { mutableStateOf("") }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    val calendar = remember { Calendar.getInstance() }
 
     // ViewModel state
     val event by viewModel.currentEvent
@@ -166,7 +168,16 @@ fun EditEventScreen(
                     label = { Text("Date") },
                     readOnly = true,
                     trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
+                        IconButton(onClick = {
+                            DatePickerDialog(
+                                context,
+                                { _, y, m, d ->
+                                    date = "%02d/%02d/%04d".format(d, m + 1, y)
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            ).show() }) {
                             Icon(Icons.Default.CalendarMonth, contentDescription = "Select date")
                         }
                     },
@@ -178,7 +189,16 @@ fun EditEventScreen(
                     label = { Text("Time") },
                     readOnly = true,
                     trailingIcon = {
-                        IconButton(onClick = { showTimePicker = true }) {
+                        IconButton(onClick = {
+                            TimePickerDialog(
+                                context,
+                                { _, h, min ->
+                                    time = "%02d:%02d".format(h, min)
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                            true
+                        ).show() }) {
                             Icon(Icons.Default.Schedule, contentDescription = "Select time")
                         }
                     },
@@ -205,53 +225,5 @@ fun EditEventScreen(
                 )
             }
         }
-
-        // DatePicker
-        if (showDatePicker) DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            onDateSelected = { date = it; showDatePicker = false }
-        )
-
-        // TimePicker
-        if (showTimePicker) TimePickerDialog(
-            onDismissRequest = { showTimePicker = false },
-            onTimeSelected = { time = it; showTimePicker = false }
-        )
     }
-}
-
-@Composable
-fun DatePickerDialog(
-    onDismissRequest: () -> Unit,
-    onDateSelected: (String) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Select Date") },
-        text = { Text("In a real app, use a proper date picker here") },
-        confirmButton = {
-            TextButton(onClick = { onDateSelected("2025-05-15") }) { Text("OK") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
-        }
-    )
-}
-
-@Composable
-fun TimePickerDialog(
-    onDismissRequest: () -> Unit,
-    onTimeSelected: (String) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Select Time") },
-        text = { Text("In a real app, use a proper time picker here") },
-        confirmButton = {
-            TextButton(onClick = { onTimeSelected("19:00") }) { Text("OK") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
-        }
-    )
 }
