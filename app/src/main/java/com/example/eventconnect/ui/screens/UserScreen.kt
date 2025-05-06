@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,7 +23,7 @@ import com.example.eventconnect.R
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun UserScreen() {
+fun UserScreen(onLogout: () -> Unit) {
     // Get current Firebase user directly
     val currentUser = FirebaseAuth.getInstance().currentUser
     var isLoading by remember { mutableStateOf(false) }
@@ -86,6 +87,13 @@ fun UserScreen() {
                         color = Color.White.copy(alpha = 0.85f)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(onClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    onLogout()
+                }) { }
             }
         } else {
             // No user is signed in

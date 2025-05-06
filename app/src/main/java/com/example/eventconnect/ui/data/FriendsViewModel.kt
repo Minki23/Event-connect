@@ -41,8 +41,7 @@ class FriendsViewModel(
             .whereEqualTo("status", "pending")
             .get()
             .addOnSuccessListener { snapshots ->
-                val requests = snapshots.mapNotNull { doc ->
-                    doc.toObject<FriendRequest>().apply { senderEmail = doc.id }
+                val requests = snapshots.mapNotNull { it.toObject<FriendRequest>()
                 }
                 _friendRequests.value = requests
                 _isLoading.value = false

@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
         }
         FirebaseApp.initializeApp(this)
     }
-    private fun launchCredentialManager() {
+    fun launchCredentialManager() {
         // [START create_credential_manager_request]
         // Instantiate a Google sign-in request
         val googleIdOption = GetGoogleIdOption.Builder()

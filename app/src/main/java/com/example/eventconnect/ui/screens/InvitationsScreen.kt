@@ -34,18 +34,7 @@ fun InvitationsScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { viewModel.fetchFriendRequests() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Invitations") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

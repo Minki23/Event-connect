@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 @Composable
 fun SearchTopAppBar(
     onProfileClick: () -> Unit,
-    navController: NavController
+    title: String
 ) {
     TopAppBar(
         title = {
@@ -31,7 +31,7 @@ fun SearchTopAppBar(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = ""
+                    text = title
                 )
             }
 

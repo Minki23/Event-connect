@@ -30,7 +30,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
 
     val friends by viewModel.friends.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
-    val friendRequests by viewModel.friendRequests.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -46,33 +45,13 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
         viewModel.searchUsers(searchQuery)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("EventConnect") },
-                actions = {
-                    BadgedBox(
-                        badge = {
-                            if (friendRequests.isNotEmpty()) {
-                                Badge { Text(friendRequests.size.toString()) }
-                            }
-                        }
-                    ) {
-                        IconButton(onClick = navigateToInvitations) {
-                            Icon(Icons.Default.PersonAdd, contentDescription = "Invitations")
-                        }
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold{ paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Friends & Search Section
             item {
                 Text(text = "Friends", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))

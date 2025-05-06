@@ -36,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.Event
+import com.example.eventconnect.ui.data.EventViewModel
 import com.example.eventconnect.ui.data.SimpleUser
 import com.example.eventconnect.ui.theme.blue
 import com.google.firebase.auth.FirebaseAuth
@@ -54,9 +55,7 @@ fun AddEventScreen(
     val db = LocalFirestore.current
     val storage = LocalStorage.current
 
-    val viewModel: EventViewModel = viewModel(
-        factory = EventViewModelFactory(db, storage)
-    )
+    val viewModel: EventViewModel = viewModel()
 
     var eventName by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -85,7 +84,6 @@ fun AddEventScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
             .padding(24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -104,7 +102,7 @@ fun AddEventScreen(
                         }) { Text("Choose from gallery") }
                         TextButton(onClick = {
                             showDialog = false
-                            val photoFile = createImageFile(context)
+                            val photoFile = viewModel.createImageFile(context)
                             val uri = androidx.core.content.FileProvider.getUriForFile(
                                 context, context.packageName + ".provider", photoFile
                             )
@@ -121,10 +119,6 @@ fun AddEventScreen(
             )
         }
 
-        Text(
-            "Create Event",
-            color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
-        )
         Spacer(Modifier.height(16.dp))
 
         Button(
@@ -262,7 +256,7 @@ fun AddEventScreen(
                     // przygotuj URI do uploadu
                     val uploadUri: Uri? = photoUri?.let { uri ->
                         if (uri.scheme == "content") {
-                            copyUriToFile(context, uri)?.let { FileUri ->
+                            viewModel.copyUriToFile(context, uri)?.let { FileUri ->
                                 Uri.fromFile(FileUri)
                             }
                         } else {
@@ -310,106 +304,5 @@ fun AddEventScreen(
     }
 }
 
-// kopiuj zawartość content:// Uri do pliku w cache
-private fun copyUriToFile(context: Context, uri: Uri): File? {
-    return try {
-        val input = context.contentResolver.openInputStream(uri) ?: return null
-        val tempFile = File.createTempFile("upload_", ".jpg", context.cacheDir)
-        tempFile.outputStream().use { output ->
-            input.copyTo(output)
-        }
-        tempFile
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
 
-// tworzy pusty plik do aparatu
-private fun createImageFile(context: Context): File {
-    val storageDir: File? = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    return File.createTempFile(
-        "JPEG_${System.currentTimeMillis()}_",
-        ".jpg",
-        storageDir
-    )
-}
 
-class EventViewModel(
-    private val db: FirebaseFirestore,
-    private val storage: FirebaseStorage
-) : ViewModel() {
-
-    fun addEvent(
-        name: String,
-        location: String,
-        description: String,
-        date: String,
-        time: String,
-        imageUri: Uri?,
-        host: FirebaseUser,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val eventId = UUID.randomUUID().toString()
-        if (imageUri != null) {
-            // upload pliku
-            val storageRef = storage.reference.child("event_images/$eventId")
-            storageRef.putFile(imageUri)
-                .continueWithTask { task ->
-                    if (!task.isSuccessful) task.exception?.let { throw it }
-                    storageRef.downloadUrl
-                }
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        saveEventToFirestore(
-                            eventId, name, location, description, date, time,
-                            task.result.toString(), host, onSuccess, onError
-                        )
-                    } else {
-                        onError("Failed to upload image: ${task.exception?.message}")
-                    }
-                }
-        } else {
-            // bez zdjęcia
-            saveEventToFirestore(eventId, name, location, description, date, time, "", host, onSuccess, onError)
-        }
-    }
-
-    private fun saveEventToFirestore(
-        eventId: String,
-        name: String,
-        location: String,
-        description: String,
-        date: String,
-        time: String,
-        imageUrl: String,
-        host: FirebaseUser,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val event = Event(eventId, name, location, description, date, time, imageUrl, host.uid, listOf(
-            SimpleUser(host.uid, host.displayName, host.email, host.photoUrl.toString())
-        ))
-        db.collection("events")
-            .document(eventId)
-            .set(event)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e ->
-                onError("Error saving event: ${e.message}")
-            }
-    }
-}
-
-class EventViewModelFactory(
-    private val db: FirebaseFirestore,
-    private val storage: FirebaseStorage
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(EventViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return EventViewModel(db, storage) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
