@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,21 +25,21 @@ import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun UserScreen(onLogout: () -> Unit) {
-    // Get current Firebase user directly
+    val colors = MaterialTheme.colorScheme
     val currentUser = FirebaseAuth.getInstance().currentUser
     var isLoading by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = Color.Black)
+            .background(color = colors.background)
     ) {
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color.White)
+                CircularProgressIndicator(color = colors.onBackground)
             }
         } else if (currentUser != null) {
             Column(
@@ -67,14 +68,14 @@ fun UserScreen(onLogout: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Display username (or display name from Google account)
+                // Display username
                 Text(
                     text = currentUser.displayName ?: "User",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 28.sp
                     ),
-                    color = Color.White
+                    color = colors.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -84,26 +85,33 @@ fun UserScreen(onLogout: () -> Unit) {
                     Text(
                         text = email,
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = colors.onSurfaceVariant
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(onClick = {
-                    FirebaseAuth.getInstance().signOut()
-                    onLogout()
-                }) { }
+                Button(
+                    onClick = {
+                        FirebaseAuth.getInstance().signOut()
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.primary,
+                        contentColor = colors.onPrimary
+                    )
+                ) {
+                    Text("Log Out")
+                }
             }
         } else {
-            // No user is signed in
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Please sign in to continue",
-                    color = Color.White,
+                    color = colors.onBackground,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }

@@ -1,17 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- res/values/styles.xml -->
-    <style name="CustomDatePickerDialogTheme" parent="ThemeOverlay.MaterialComponents.TimePicker">
-        <!-- Override primary color, header background, etc. -->
-        <item name="colorPrimary">@color/blue</item>
-        <item name="android:datePickerStyle">@style/CustomDatePickerStyle</item>
+    <style name="CustomTimePickerDialog" parent="Theme.MaterialComponents.Dialog.Alert">
+        <!-- Header / akcent -->
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="colorOnPrimary">@color/black_primary</item>
+        <item name="colorAccent">@color/blue_primary_variant</item>
+
+        <!-- Tło dialogu -->
+        <item name="android:windowBackground">@color/surface_dark</item>
+        <item name="backgroundTint">@color/surface_dark</item>
+
+        <!-- Teksty -->
+        <item name="android:textColorPrimary">@color/white_primary</item>
+        <item name="android:textColorSecondary">@color/gray_primary</item>
+
+        <!-- Kontrolki (spinnery, suwaki) -->
+        <item name="colorControlActivated">@color/blue_primary</item>
+        <item name="colorControlNormal">@color/gray_primary</item>
+        <item name="colorControlHighlight">@color/blue_primary_variant</item>
+
     </style>
+    <style name="CustomDatePickerDialog" parent="Theme.MaterialComponents.Dialog.Alert">
+        <!-- Header / akcent -->
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="colorOnPrimary">@color/black_primary</item>
+        <item name="colorAccent">@color/blue_primary_variant</item>
 
-    <style name="CustomDatePickerStyle" parent="android:Widget.Material.DatePicker">
-        <!-- Customize header, calendar background, text colors -->
-        <item name="android:headerBackground">@color/blue</item>
-        <item name="android:calendarTextColor">@color/white</item>
+        <!-- Tło dialogu -->
+        <item name="android:windowBackground">@color/surface_dark</item>
+        <item name="backgroundTint">@color/surface_dark</item>
+
+        <!-- Teksty -->
+        <item name="android:textColorPrimary">@color/white_primary</item>
+        <item name="android:textColorSecondary">@color/gray_primary</item>
+
+        <!-- Kontrolki (spinnery, suwaki) -->
+        <item name="colorControlActivated">@color/blue_primary</item>
+        <item name="colorControlNormal">@color/gray_primary</item>
+        <item name="colorControlHighlight">@color/blue_primary_variant</item>
+
     </style>
-
-
 </resources>

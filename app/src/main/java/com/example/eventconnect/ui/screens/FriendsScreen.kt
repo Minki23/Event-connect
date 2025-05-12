@@ -17,7 +17,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.eventconnect.ui.data.FriendsViewModel
 import com.example.eventconnect.ui.data.User
-import com.example.eventconnect.ui.theme.blue
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
@@ -70,12 +69,12 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
                 ) {
                     Button(
                         onClick = { showCreateUserDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = blue)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
                     ) { Text("Create User") }
 
                     Button(
                         onClick = { showAddFriendDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = blue)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
                     ) { Text("Add Friend") }
                 }
             }

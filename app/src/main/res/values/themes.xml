@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="CustomDatePickerTheme" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
-        <item name="colorPrimary">@color/blue</item>
-        <item name="colorAccent">@color/blue</item>
-    </style>
-    <style name="Theme.EventConnect" parent="android:Theme.Material.Light.NoActionBar" />
-</resources>

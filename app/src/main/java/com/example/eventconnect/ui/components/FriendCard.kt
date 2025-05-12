@@ -1,25 +1,11 @@
-package com.example.eventconnect.ui.components
-
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
-import androidx.compose.material.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,7 +18,9 @@ import com.example.eventconnect.models.Friend
 fun InvitationCard(friend: Friend, onAccept: () -> Unit, onDecline: () -> Unit) {
     Card(
         shape = RoundedCornerShape(8.dp),
-        backgroundColor = Color(0xFF1C1C1E),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
@@ -51,8 +39,16 @@ fun InvitationCard(friend: Friend, onAccept: () -> Unit, onDecline: () -> Unit) 
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(friend.name, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(friend.email, color = Color.Gray, fontSize = 12.sp)
+                Text(
+                    friend.name,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    friend.email,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -61,8 +57,8 @@ fun InvitationCard(friend: Friend, onAccept: () -> Unit, onDecline: () -> Unit) 
                     Button(
                         onClick = onDecline,
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFFF6F61),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
                         ),
                         modifier = Modifier.width(120.dp),
                         shape = RoundedCornerShape(10.dp)
@@ -73,8 +69,8 @@ fun InvitationCard(friend: Friend, onAccept: () -> Unit, onDecline: () -> Unit) 
                     Button(
                         onClick = onAccept,
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF66BB6A),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary
                         ),
                         modifier = Modifier.width(120.dp),
                         shape = RoundedCornerShape(10.dp)
@@ -91,7 +87,9 @@ fun InvitationCard(friend: Friend, onAccept: () -> Unit, onDecline: () -> Unit) 
 fun FriendCard(friend: Friend) {
     Card(
         shape = RoundedCornerShape(8.dp),
-        backgroundColor = Color(0xFF1C1C1E),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
@@ -110,16 +108,29 @@ fun FriendCard(friend: Friend) {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(friend.name, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(friend.email, color = Color.Gray, fontSize = 12.sp)
+                Text(
+                    friend.name,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    friend.email,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
             }
         }
     }
 }
+
 @Preview
 @Composable
 fun InvitationCardPreview() {
-    val friend = Friend("John Doe", "john.mclean@examplepetstore.com", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d")
+    val friend = Friend(
+        "John Doe",
+        "john.mclean@examplepetstore.com",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d"
+    )
     Column {
         InvitationCard(friend = friend, onAccept = {}, onDecline = {})
         FriendCard(friend = friend)

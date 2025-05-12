@@ -41,6 +41,7 @@ android {
 }
 
 dependencies {
+    implementation ("com.google.android.material:material:1.9.0")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.compose.material:material:1.5.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.0")

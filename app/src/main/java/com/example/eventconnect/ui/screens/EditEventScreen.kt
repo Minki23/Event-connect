@@ -3,6 +3,7 @@ package com.example.eventconnect.ui.screens
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.net.Uri
+import android.view.ContextThemeWrapper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.eventconnect.R
 import com.example.eventconnect.ui.data.EventViewModel
 import java.util.Calendar
 
@@ -42,6 +44,7 @@ fun EditEventScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
+
     // Form state
     var name by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -90,7 +93,7 @@ fun EditEventScreen(
                         time = time,
                         imageUrl = event!!.imageUrl,
                         context = context,
-                        navController=navController,
+                        navController = navController,
                         scope = scope,
                         selectedImageUri = newImageUri
                     )
@@ -164,13 +167,13 @@ fun EditEventScreen(
                 )
                 OutlinedTextField(
                     value = date,
-                    onValueChange = {},
+                    onValueChange = { date = it },
                     label = { Text("Date") },
                     readOnly = true,
                     trailingIcon = {
                         IconButton(onClick = {
                             DatePickerDialog(
-                                context,
+                                ContextThemeWrapper(context, R.style.CustomDatePickerDialog),
                                 { _, y, m, d ->
                                     date = "%02d/%02d/%04d".format(d, m + 1, y)
                                 },
@@ -185,20 +188,20 @@ fun EditEventScreen(
                 )
                 OutlinedTextField(
                     value = time,
-                    onValueChange = {},
+                    onValueChange = { time = it },
                     label = { Text("Time") },
                     readOnly = true,
                     trailingIcon = {
                         IconButton(onClick = {
                             TimePickerDialog(
-                                context,
+                                ContextThemeWrapper(context, R.style.CustomTimePickerDialog),
                                 { _, h, min ->
                                     time = "%02d:%02d".format(h, min)
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
-                            true
-                        ).show() }) {
+                                true
+                            ).show() }) {
                             Icon(Icons.Default.Schedule, contentDescription = "Select time")
                         }
                     },

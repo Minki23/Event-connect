@@ -153,17 +153,17 @@ fun FilterTab(
     modifier: Modifier = Modifier
 ) {
     Tab(
-        modifier = modifier,
         selected = selected,
         onClick = onClick,
         text = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface
             )
-        }
+        },
+        modifier = modifier
     )
 }
 
@@ -181,13 +181,14 @@ fun EventItem(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
         shape = RoundedCornerShape(12.dp),
         onClick = onClick
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (event.imageUrl.isNotEmpty()) {
@@ -202,54 +203,46 @@ fun EventItem(
                 Spacer(modifier = Modifier.width(16.dp))
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = event.name,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "${event.date} at ${event.time}",
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
 
-                // Location if available
                 if (event.location.isNotEmpty()) {
                     Text(
                         text = event.location,
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
 
-                // Participants count
                 Text(
                     text = "${event.participants.size} attending",
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             }
 
-            // Status badges
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
+            Column(horizontalAlignment = Alignment.End) {
                 if (isUserEvent) {
                     Surface(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier.padding(vertical = 2.dp)
                     ) {
                         Text(
                             "Host",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontSize = 12.sp
                         )
                     }
@@ -257,14 +250,14 @@ fun EventItem(
 
                 if (isParticipating) {
                     Surface(
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier.padding(vertical = 2.dp)
                     ) {
                         Text(
                             "Attending",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
                             fontSize = 12.sp
                         )
                     }

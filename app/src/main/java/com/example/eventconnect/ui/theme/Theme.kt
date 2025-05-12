@@ -1,6 +1,5 @@
 package com.example.eventconnect.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -13,41 +12,58 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 val BluePrimary = Color(0xFF007BFF)
+val WhitePrimary = Color(0xFFFFFFFF)
+val GrayPrimary = Color(0xFF808080)
+val BlackPrimary = Color(0xFF000000)
 val BluePrimaryVariant = Color(0xFF005FCC)
-val BlueOnPrimary = Color(0xFFFFFFFF)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = blue,
-    secondary = blue,
-    tertiary = blue,
-    onPrimary = blue, // Add the new primary color
-    primaryContainer = blue,
+private val LightColorScheme = lightColorScheme(
+    primary = BluePrimary,
+    onPrimary = WhitePrimary,
+    primaryContainer = BluePrimaryVariant,
+    onPrimaryContainer = WhitePrimary,
+    secondary = GrayPrimary,
+    onSecondary = WhitePrimary,
+    secondaryContainer = GrayPrimary,
+    onSecondaryContainer = WhitePrimary,
+    tertiary = BluePrimary,
+    onTertiary = WhitePrimary,
+    background = WhitePrimary,
+    onBackground = BlackPrimary,
+    surface = WhitePrimary,
+    onSurface = BlackPrimary,
+    surfaceVariant = Color(0xFFE0E0E0),
+    onSurfaceVariant = BlackPrimary,
+    error = Color(0xFFB00020),
+    onError = WhitePrimary,
+    outline = GrayPrimary
 )
 
-
-
-private val LightColorScheme = lightColorScheme(
-    primary = blue,
-    secondary = blue,
-    tertiary = blue,
-    onPrimary = blue,
-    primaryContainer = blue,
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val DarkColorScheme = darkColorScheme(
+    primary = BluePrimary,
+    onPrimary = BlackPrimary,
+    primaryContainer = BluePrimaryVariant,
+    onPrimaryContainer = BlackPrimary,
+    secondary = GrayPrimary,
+    onSecondary = BlackPrimary,
+    secondaryContainer = GrayPrimary,
+    onSecondaryContainer = BlackPrimary,
+    tertiary = BluePrimary,
+    onTertiary = BlackPrimary,
+    background = BlackPrimary,
+    onBackground = WhitePrimary,
+    surface = BlackPrimary,
+    onSurface = WhitePrimary,
+    surfaceVariant = Color(0xFF424242),
+    onSurfaceVariant = WhitePrimary,
+    error = Color(0xFFCF6679),
+    onError = BlackPrimary,
+    outline = GrayPrimary
 )
 
 @Composable
 fun EventConnectTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -55,7 +71,6 @@ fun EventConnectTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

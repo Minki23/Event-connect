@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.example.eventconnect.ui.theme.BluePrimary
+import com.example.eventconnect.ui.theme.WhitePrimary
 import java.io.File
 
 @Composable
@@ -77,12 +79,12 @@ fun UploadPhotoButton(context: Context) {
                 }
                 .show()
         },
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF)),
+        colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = Color.White)
+        Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = WhitePrimary)
         Spacer(modifier = Modifier.width(8.dp))
-        Text("Upload Photo", color = Color.White)
+        Text("Upload Photo", color = WhitePrimary)
     }
 }
 
@@ -91,5 +93,6 @@ fun createImageFile(context: Context): File {
     return File.createTempFile(
         "JPEG_${System.currentTimeMillis()}_",
         ".jpg",
+        storageDir
     )
 }

@@ -31,7 +31,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.eventconnect.R
-import com.example.eventconnect.ui.theme.blue
 
 @Composable
 fun WelcomeScreen(
@@ -87,7 +86,7 @@ fun WelcomeScreen(
         ) {
             Button(
                 onClick = onLoginClick,
-                colors = ButtonDefaults.buttonColors(containerColor = blue),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
@@ -100,7 +99,7 @@ fun WelcomeScreen(
 
             Button(
                 onClick = onRegisterClick,
-                colors = ButtonDefaults.buttonColors(containerColor = blue),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)

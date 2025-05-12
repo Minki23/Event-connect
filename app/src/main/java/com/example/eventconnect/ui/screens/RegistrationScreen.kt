@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.eventconnect.models.User
 import com.example.eventconnect.ui.data.UserViewModel
-import com.example.eventconnect.ui.theme.blue
 
 @Composable
 fun RegistrationScreen(
@@ -126,7 +125,7 @@ fun RegistrationScreen(
                     checked = termsChecked,
                     onCheckedChange = { termsChecked = it },
                     colors = CheckboxDefaults.colors(
-                        checkedColor = blue,
+                        checkedColor = MaterialTheme.colorScheme.onPrimary,
                         uncheckedColor = Color.Gray
                     )
                 )
@@ -148,7 +147,7 @@ fun RegistrationScreen(
                             }
                           },
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = blue),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(48.dp)
@@ -172,7 +171,7 @@ fun RegistrationScreen(
                 TextButton(onClick = onLoginClick) {
                     Text(
                         text = "Log In",
-                        color = blue,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .padding(0.dp)
                     )
