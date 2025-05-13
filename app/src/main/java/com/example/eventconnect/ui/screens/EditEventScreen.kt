@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
@@ -84,6 +85,7 @@ fun EditEventScreen(
     }
     val calendar = remember { Calendar.getInstance() }
     val loading = remember { mutableStateOf(false) }
+    val isUploadingPhoto = remember { mutableStateOf(false) }
 
     // ViewModel state
     val event by viewModel.currentEvent
@@ -97,10 +99,18 @@ fun EditEventScreen(
         viewModel.loadUserFriends(Firebase.auth.currentUser?.uid ?: "")
     }
 
-    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri -> newImageUri = uri }
+    ) { uri ->
+        newImageUri = uri
+        if (uri != null) {
+            loading.value = true
+            viewModel.uploadPhotoForEvent(eventId, uri, context) {
+                Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
 
     // Load event once on enter
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
@@ -160,7 +170,7 @@ fun EditEventScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                enabled = !isSaving && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
+                enabled = !isSaving && !viewModel.isUploadingPhoto.value && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
             ) {
                 Text(if (isSaving) "Saving..." else "Save Changes")
             }
@@ -303,16 +313,19 @@ fun EditEventScreen(
                 item {
                     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
                         if (uris.isNotEmpty()) {
-                            loading.value = true
+                            isUploadingPhoto.value = true
+                            loading.value = true  // Show a loading indicator during upload
                             uris.forEach { uri ->
                                 viewModel.uploadPhotoForEvent(eventId, uri, context) {
-                                    // Toast for each upload
+                                    // Update UI after the photo upload is done
                                     Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
                                 }
                             }
+                            loading.value = false  // Hide loading indicator after upload
+                            isUploadingPhoto.value = false  // Reset the flag once upload is done
                         }
-                        loading.value = false
                     }
+
 
                     Column(
                         modifier = Modifier.fillMaxWidth()
@@ -433,36 +446,53 @@ fun EditEventScreen(
             }
 
             // Download Button
-            IconButton(
-                onClick = {
-                    val url = photoUrls[pagerState.currentPage]
-                    val request = DownloadManager.Request(Uri.parse(url)).apply {
-                        setTitle("Downloading image")
-                        setDescription("Saving image from EventConnect")
-                        setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        setDestinationInExternalPublicDir(
-                            android.os.Environment.DIRECTORY_PICTURES,
-                            "EventConnect_${System.currentTimeMillis()}.jpg"
-                        )
-                        setAllowedOverMetered(true)
-                        setAllowedOverRoaming(true)
-                    }
-
-                    val downloadManager =
-                        context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as DownloadManager
-                    downloadManager.enqueue(request)
-
-                    Toast.makeText(context, "Downloading image...", Toast.LENGTH_SHORT).show()
-                },
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Download, // Replace with download icon if you have
-                    contentDescription = "Download",
-                    tint = Color.White
-                )
+                IconButton(
+                    onClick = {
+                        val url = photoUrls[pagerState.currentPage]
+                        val request = DownloadManager.Request(Uri.parse(url)).apply {
+                            setTitle("Downloading image")
+                            setDescription("Saving image from EventConnect")
+                            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                            setDestinationInExternalPublicDir(
+                                android.os.Environment.DIRECTORY_PICTURES,
+                                "EventConnect_${System.currentTimeMillis()}.jpg"
+                            )
+                            setAllowedOverMetered(true)
+                            setAllowedOverRoaming(true)
+                        }
+
+                        val downloadManager =
+                            context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as DownloadManager
+                        downloadManager.enqueue(request)
+
+                        Toast.makeText(context, "Downloading image...", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download, // Replace with download icon if you have
+                        contentDescription = "Download",
+                        tint = Color.White
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        val photoToRemove = photoUrls[pagerState.currentPage]
+                        viewModel.removePhotoFromEvent(eventId, photoToRemove)
+                        isPhotoViewerOpen =
+                            false
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove Photo",
+                        tint = Color.White
+                    )
+                }
             }
         }
     }

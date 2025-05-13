@@ -61,6 +61,10 @@ class EventViewModel : ViewModel() {
     val _userFriends = MutableStateFlow<List<SimpleUser>>(emptyList()) // załaduj znajomych bieżącego użytkownika
     val friends = _userFriends.asStateFlow()
 
+    private val _isUploadingPhoto = mutableStateOf(false)
+    val isUploadingPhoto: State<Boolean> = _isUploadingPhoto
+
+
     init {
         fetchEvents()
         loadUserFriends(currentUserUid)
@@ -304,21 +308,35 @@ class EventViewModel : ViewModel() {
     }
 
     fun uploadPhotoForEvent(eventId: String, uri: Uri, context: Context, onSuccess: () -> Unit) {
+        _isUploadingPhoto.value = true
         viewModelScope.launch {
             try {
                 val fileName = UUID.randomUUID().toString()
                 val photoRef = storage.reference.child("event_photos/$eventId/$fileName.jpg")
                 photoRef.putFile(uri).await()
                 val downloadUrl = photoRef.downloadUrl.await().toString()
+
+                // Add photo URL to Firestore
                 val eventDoc = db.collection("events").document(eventId)
                 eventDoc.update("photoUrls", FieldValue.arrayUnion(downloadUrl)).await()
-                loadEvent(eventId) // Refresh event with new photo
+
+                // Only update photoUrls in the current event, without refreshing the whole event
+                _currentEvent.value?.let {
+                    val updatedEvent = it.copy(
+                        photoUrls = it.photoUrls + downloadUrl
+                    )
+                    _currentEvent.value = updatedEvent
+                }
+
+                _isUploadingPhoto.value = false
                 onSuccess()
             } catch (e: Exception) {
                 Toast.makeText(context, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                _isUploadingPhoto.value = false
             }
         }
     }
+
 
     fun loadUserFriends(currentUserId: String) {
         db.collection("users")
@@ -377,5 +395,27 @@ class EventViewModel : ViewModel() {
             .addOnFailureListener {
                 Log.e("Firestore", "Failed to load event participants", it)
             }
+    }
+    fun removePhotoFromEvent(eventId: String, photoUrl: String) {
+        _isUploadingPhoto.value = true   // reuse this flag to show a “busy” state if you like
+        viewModelScope.launch {
+            try {
+                // 1) Remove from Firestore
+                db.collection("events")
+                    .document(eventId)
+                    .update("photoUrls", FieldValue.arrayRemove(photoUrl))
+                    .await()
+
+                // 2) Locally update currentEvent so Compose recomposes
+                _currentEvent.value = _currentEvent.value?.copy(
+                    photoUrls = _currentEvent.value!!.photoUrls.filter { it != photoUrl }
+                )
+
+            } catch (e: Exception) {
+                Log.e("EventViewModel", "Error removing photo", e)
+            } finally {
+                _isUploadingPhoto.value = false
+            }
+        }
     }
 }
