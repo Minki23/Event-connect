@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +117,7 @@ class EventViewModel : ViewModel() {
                             photoUrl = map["photoUrl"] as? String
                         )
                     }
+                    val photoUrls = doc.get("photoUrls") as? List<String> ?: emptyList()
                     _currentEvent.value = Event(
                         id = doc.id,
                         name = doc.getString("name") ?: "",
@@ -125,7 +127,8 @@ class EventViewModel : ViewModel() {
                         time = doc.getString("time") ?: "",
                         imageUrl = doc.getString("imageUrl") ?: "",
                         host = doc.getString("host") ?: "",
-                        participants = participants
+                        participants = participants,
+                        photoUrls = photoUrls
                     )
                 }
             } catch (_: Exception) {
@@ -275,5 +278,24 @@ class EventViewModel : ViewModel() {
             ".jpg",
             storageDir
         )
+    }
+
+    fun uploadPhotoForEvent(eventId: String, uri: Uri, context: Context, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val fileName = UUID.randomUUID().toString()
+                val photoRef = storage.reference.child("event_photos/$eventId/$fileName.jpg")
+                photoRef.putFile(uri).await()
+                val downloadUrl = photoRef.downloadUrl.await().toString()
+
+                val eventDoc = db.collection("events").document(eventId)
+                eventDoc.update("photoUrls", FieldValue.arrayUnion(downloadUrl)).await()
+                loadEvent(eventId) // Refresh event with new photo
+
+                onSuccess()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

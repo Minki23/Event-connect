@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,11 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.eventconnect.ui.data.FriendsViewModel
+import com.example.eventconnect.ui.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 /**
- * Screen dedicated to viewing and managing incoming friend invitations
+ * Screen for finding and sending friend invitations to users
  * @param onBack lambda to pop back
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,77 +31,66 @@ fun InvitationsScreen(onBack: () -> Unit) {
     val currentUser = Firebase.auth.currentUser
     val viewModel = remember { FriendsViewModel(db, currentUser?.uid ?: "", currentUser?.email ?: "") }
 
-    val friendRequests by viewModel.friendRequests.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val allUsers by viewModel.allUsers.collectAsState()
+    val friends by viewModel.friends.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.fetchFriendRequests() }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Fetch all users when the screen is first shown
+    LaunchedEffect(Unit) {
+        viewModel.fetchAllUsers()
+    }
 
     Scaffold(
-        containerColor = colors.background
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
             when {
-                isLoading -> item { LoadingIndicator() }
-                error.isNotEmpty() -> item { ErrorMessage(error) }
-                friendRequests.isEmpty() -> item {
+                isLoading -> { LoadingIndicator() }
+                error.isNotEmpty() -> { ErrorMessage(error) }
+                searchQuery.isNotEmpty() && searchResults.isEmpty() -> {
                     Text(
-                        "No invitations",
+                        "No users found with that name",
                         color = colors.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
-                else -> items(friendRequests) { request ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = colors.surfaceVariant
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                else -> {
+                    // Display header text based on whether we're showing search results or all users
+                    Text(
+                        text = if (searchQuery.isEmpty()) "All Users" else "Search Results",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    // Show either search results or all users
+                    val usersToDisplay = if (searchQuery.isEmpty()) allUsers else searchResults
+
+                    if (usersToDisplay.isEmpty() && !isLoading) {
+                        Text(
+                            "No users found",
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            Text(
-                                "From: ${request.senderEmail}",
-                                color = colors.onSurface,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-
-                            Row {
-                                Button(
-                                    onClick = { viewModel.acceptRequest(request) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = colors.primary,
-                                        contentColor = colors.onPrimary
-                                    ),
-                                    modifier = Modifier.height(36.dp)
-                                ) {
-                                    Text("Accept", fontSize = 14.sp)
-                                }
-
-                                Spacer(Modifier.width(8.dp))
-
-                                Button(
-                                    onClick = { viewModel.declineRequest(request) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = colors.errorContainer,
-                                        contentColor = colors.onErrorContainer
-                                    ),
-                                    modifier = Modifier.height(36.dp)
-                                ) {
-                                    Text("Decline", fontSize = 14.sp)
-                                }
+                            items(usersToDisplay) { user ->
+                                UserCard(
+                                    user = user,
+                                    alreadyFriend = friends.any { it.userId == user.uid },
+                                    onSendRequest = {
+                                        viewModel.addFriend(currentUser?.uid ?: "", user.email)
+                                    }
+                                )
                             }
                         }
                     }
@@ -111,8 +101,71 @@ fun InvitationsScreen(onBack: () -> Unit) {
 }
 
 @Composable
+private fun UserCard(
+    user: User,
+    alreadyFriend: Boolean,
+    onSendRequest: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = user.displayName,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = user.email,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (!alreadyFriend) {
+                Button(
+                    onClick = onSendRequest,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text("Add Friend", fontSize = 14.sp)
+                }
+            } else {
+                Text(
+                    "Already Friends",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun LoadingIndicator() {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }

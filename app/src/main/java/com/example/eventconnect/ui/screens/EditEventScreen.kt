@@ -3,11 +3,14 @@ package com.example.eventconnect.ui.screens
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.net.Uri
+import android.util.Log
 import android.view.ContextThemeWrapper
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,6 +67,7 @@ fun EditEventScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> newImageUri = uri }
+
 
     // Load event once on enter
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
@@ -226,6 +230,48 @@ fun EditEventScreen(
                         .height(150.dp),
                     maxLines = 5
                 )
+                val additionalPhotoUri = remember { mutableStateOf<Uri?>(null) }
+                val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    if (uri != null) {
+                        additionalPhotoUri.value = uri
+                        viewModel.uploadPhotoForEvent(eventId, uri, context) {
+                            Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                Text("Event Photos", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Existing photos
+                    event?.photoUrls?.forEach { photoUrl ->
+                        AsyncImage(
+                            model = photoUrl,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .padding(end = 8.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    // Add button
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Gray.copy(alpha = 0.2f))
+                            .clickable { galleryPicker.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Add photo")
+                    }
+                }
             }
         }
     }

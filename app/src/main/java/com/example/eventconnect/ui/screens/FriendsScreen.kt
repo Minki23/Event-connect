@@ -86,7 +86,7 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
                         item { Text("No users found", color = Color.White) }
                     } else {
                         items(searchResults) { user ->
-                            UserResultItem(user = user, onAdd = { viewModel.sendFriendRequest(user.id) })
+                            UserResultItem(user = user, onAdd = { viewModel.sendFriendRequest(user.uid) })
                         }
                     }
                 }
@@ -202,7 +202,7 @@ private fun UserResultItem(user: User, onAdd: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(user.name, style = MaterialTheme.typography.bodyLarge)
+                Text(user.displayName, style = MaterialTheme.typography.bodyLarge)
                 Text(user.email, style = MaterialTheme.typography.bodyMedium)
             }
             Button(onClick = onAdd) { Text("Add Friend") }
