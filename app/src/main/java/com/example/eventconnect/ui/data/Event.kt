@@ -3,8 +3,8 @@ package com.example.eventconnect.ui.data
 import com.google.firebase.auth.FirebaseUser
 
 data class SimpleUser(
-    val uid: String? = "",
-    val displayName: String? = "",
+    val userId: String? = "",
+    val name: String? = "",
     val email: String? = "",
     val photoUrl: String? = ""
 )

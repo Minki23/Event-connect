@@ -261,7 +261,51 @@ class FriendsViewModel(
                 _error.value = "Failed to check existing friends: ${e.message}"
             }
     }
+    fun deleteFriend(friendEmail: String) {
+        val userDoc = db.collection("users").document(currentUserId)
+
+        userDoc.collection("friends")
+            .whereEqualTo("email", friendEmail)
+            .get()
+            .addOnSuccessListener { documents ->
+                val batch = db.batch()
+                for (doc in documents) {
+                    batch.delete(doc.reference)
+                }
+
+                db.collection("users")
+                    .whereEqualTo("email", friendEmail)
+                    .get()
+                    .addOnSuccessListener { userDocs ->
+                        val otherUserId = userDocs.firstOrNull()?.id
+                        if (otherUserId != null) {
+                            db.collection("users").document(otherUserId)
+                                .collection("friends")
+                                .whereEqualTo("email", currentUserEmail)
+                                .get()
+                                .addOnSuccessListener { backDocs ->
+                                    for (doc in backDocs) {
+                                        batch.delete(doc.reference)
+                                    }
+                                    batch.commit().addOnSuccessListener {
+                                        fetchFriends()
+                                        _error.value = "Friend removed successfully"
+                                    }
+                                }
+                        } else {
+                            batch.commit().addOnSuccessListener {
+                                fetchFriends()
+                                _error.value = "Friend removed from your list"
+                            }
+                        }
+                    }
+            }
+            .addOnFailureListener { e ->
+                _error.value = "Failed to remove friend: ${e.message}"
+            }
+    }
 }
+
 
 data class User(
     val uid: String = "",

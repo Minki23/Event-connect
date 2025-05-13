@@ -3,8 +3,10 @@ package com.example.eventconnect.ui.data
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -14,8 +16,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.File
@@ -29,7 +34,7 @@ class EventViewModel : ViewModel() {
     // expose current user ID
     val currentUserUid: String
         get() = auth.currentUser?.uid.orEmpty()
-
+    val currentUser = auth.currentUser
     // -- Events list state --
     private val _selectedFilter = mutableStateOf(EventFilter.ALL)
     val selectedFilter: State<EventFilter> = _selectedFilter
@@ -50,8 +55,15 @@ class EventViewModel : ViewModel() {
     private val _isSaving = mutableStateOf(false)
     val isSaving: State<Boolean> = _isSaving
 
+    val _eventParticipants = MutableStateFlow<List<SimpleUser>>(emptyList())
+    val eventParticipants = _eventParticipants.asStateFlow()
+
+    val _userFriends = MutableStateFlow<List<SimpleUser>>(emptyList()) // załaduj znajomych bieżącego użytkownika
+    val friends = _userFriends.asStateFlow()
+
     init {
         fetchEvents()
+        loadUserFriends(currentUserUid)
     }
 
     fun setFilter(filter: EventFilter) {
@@ -73,8 +85,8 @@ class EventViewModel : ViewModel() {
                         val participantsData = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
                         val participants = participantsData.map { map ->
                             SimpleUser(
-                                uid = map["uid"] as? String,
-                                displayName = map["displayName"] as? String,
+                                userId = map["userId"] as? String,
+                                name = map["name"] as? String,
                                 email = map["email"] as? String,
                                 photoUrl = map["photoUrl"] as? String
                             )
@@ -93,7 +105,7 @@ class EventViewModel : ViewModel() {
                     }.getOrNull()
                 }
                 _events.value = if (_selectedFilter.value == EventFilter.PARTICIPATING) {
-                    all.filter { e -> e.participants.any { it.uid == currentUserUid } }
+                    all.filter { e -> e.participants.any { it.userId == currentUserUid } }
                 } else all
             } catch (_: Exception) {
             } finally {
@@ -107,12 +119,15 @@ class EventViewModel : ViewModel() {
             _isLoadingEvent.value = true
             try {
                 val doc = db.collection("events").document(eventId).get().await()
+                val participantsData = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
+                val participantIds = participantsData.mapNotNull { it["userId"] as? String }
+                loadEventParticipants(participantIds) // <--- load full User objects
                 if (doc.exists()) {
                     val participantsData = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
                     val participants = participantsData.map { map ->
                         SimpleUser(
-                            uid = map["uid"] as? String,
-                            displayName = map["displayName"] as? String,
+                            userId = map["userId"] as? String,
+                            name = map["name"] as? String,
                             email = map["email"] as? String,
                             photoUrl = map["photoUrl"] as? String
                         )
@@ -150,13 +165,13 @@ class EventViewModel : ViewModel() {
         navController: NavController,
         scope: CoroutineScope,
         selectedImageUri: Uri?,
+        participants: List<SimpleUser>
     ) {
         val currentUser = FirebaseAuth.getInstance().currentUser
         val userId = currentUser?.uid ?: ""
 
         // Check if user is the host
         if (event?.host != userId) {
-            // Show error message - only the host can edit
             Toast.makeText(context, "Only the event host can edit this event", Toast.LENGTH_SHORT).show()
             return
         }
@@ -174,6 +189,15 @@ class EventViewModel : ViewModel() {
                     val uploadTask = storageRef.putFile(uri).await()
                     finalImageUrl = storageRef.downloadUrl.await().toString()
                 }
+                // Map participants to Firestore structure
+                val participantsMap = participants.map {
+                    mapOf(
+                        "userId" to it.userId,
+                        "name" to it.name,
+                        "email" to it.email,
+                        "photoUrl" to it.photoUrl
+                    )
+                }
 
                 // Update event data
                 val eventData = hashMapOf(
@@ -182,15 +206,14 @@ class EventViewModel : ViewModel() {
                     "description" to description,
                     "date" to date,
                     "time" to time,
-                    "imageUrl" to finalImageUrl
+                    "imageUrl" to finalImageUrl,
+                    "participants" to participantsMap
                 )
 
                 eventRef.update(eventData as Map<String, Any>).await()
 
-                // Navigate back
                 navController.popBackStack()
             } catch (e: Exception) {
-                // Handle error
                 println("Error updating event: ${e.message}")
             } finally {
                 _isSaving.value = false
@@ -242,7 +265,7 @@ class EventViewModel : ViewModel() {
         imageUrl: String,
         host: FirebaseUser,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
     ) {
         val event = Event(eventId, name, location, description, date, time, imageUrl, host.uid, listOf(
             SimpleUser(host.uid, host.displayName, host.email, host.photoUrl.toString())
@@ -287,15 +310,72 @@ class EventViewModel : ViewModel() {
                 val photoRef = storage.reference.child("event_photos/$eventId/$fileName.jpg")
                 photoRef.putFile(uri).await()
                 val downloadUrl = photoRef.downloadUrl.await().toString()
-
                 val eventDoc = db.collection("events").document(eventId)
                 eventDoc.update("photoUrls", FieldValue.arrayUnion(downloadUrl)).await()
                 loadEvent(eventId) // Refresh event with new photo
-
                 onSuccess()
             } catch (e: Exception) {
                 Toast.makeText(context, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    fun loadUserFriends(currentUserId: String) {
+        db.collection("users")
+            .document(currentUserId)
+            .collection("friends") // or wherever you store friend references
+            .get()
+            .addOnSuccessListener { friendDocs ->
+                val friendIds = friendDocs.mapNotNull { it.getString("userId") } // assuming `userId` is stored
+                if (friendIds.isEmpty()) {
+                    _userFriends.value = emptyList()
+                    return@addOnSuccessListener
+                }
+
+                db.collection("users")
+                    .whereIn("uid", friendIds)
+                    .get()
+                    .addOnSuccessListener { userDocs ->
+                        val friends = userDocs.map {
+                            SimpleUser(
+                                userId = it.getString("uid"),
+                                name = it.getString("displayName"),
+                                email = it.getString("email"),
+                                photoUrl = it.getString("photoUrl")
+                            )
+                        }
+                        _userFriends.value = friends
+                    }
+                    .addOnFailureListener {
+                        Log.e("Firestore", "Failed to load user profiles", it)
+                    }
+            }
+            .addOnFailureListener {
+                Log.e("Firestore", "Failed to load friend references", it)
+            }
+    }
+    fun loadEventParticipants(participantIds: List<String>) {
+        if (participantIds.isEmpty()) {
+            _eventParticipants.value = emptyList()
+            return
+        }
+
+        db.collection("users")
+            .whereIn("uid", participantIds)
+            .get()
+            .addOnSuccessListener { documents ->
+                val users = documents.mapNotNull {
+                    SimpleUser(
+                        userId = it.getString("uid"),
+                        name = it.getString("displayName"),
+                        email = it.getString("email"),
+                        photoUrl = it.getString("photoUrl")
+                    )
+                }
+                _eventParticipants.value = users
+            }
+            .addOnFailureListener {
+                Log.e("Firestore", "Failed to load event participants", it)
+            }
     }
 }

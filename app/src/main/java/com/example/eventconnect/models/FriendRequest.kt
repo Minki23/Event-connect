@@ -1,10 +1,9 @@
 package com.example.eventconnect.models
 
-import com.google.type.DateTime
-
-class FriendRequest(
-    val receiverEmail: String,
-    var senderEmail: String,
-    val status: String,
-    val timestamp: DateTime
+data class FriendRequest(
+    val senderId: String = "",
+    val senderEmail: String = "",
+    val receiverEmail: String = "",
+    val status: String = "",
+    val timestamp: com.google.firebase.Timestamp? = null
 )

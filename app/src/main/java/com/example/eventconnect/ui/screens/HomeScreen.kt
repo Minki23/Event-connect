@@ -98,7 +98,7 @@ fun HomeScreen(
                         EventItem(
                             event = event,
                             isUserEvent = event.host == currentUserUid,
-                            isParticipating = event.participants.any { it.uid == currentUserUid },
+                            isParticipating = event.participants.any { it.userId == currentUserUid },
                             onClick = {
                                 if (event.host == currentUserUid) {
                                     navController.navigate("edit_event/${event.id}")

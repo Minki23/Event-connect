@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -96,8 +94,11 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
                         item { Text("No friends yet", color = Color.White) }
                     } else {
                         items(friends) { friend ->
-                            FriendItem(friend.name)
+                            FriendItem(name = friend.name, email = friend.email) {
+                                viewModel.deleteFriend(friend.email)
+                            }
                         }
+
                     }
                 }
             }
@@ -211,17 +212,27 @@ private fun UserResultItem(user: User, onAdd: () -> Unit) {
 }
 
 @Composable
-private fun FriendItem(name: String) {
+private fun FriendItem(name: String, email: String, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        Text(
-            text = name,
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(name, style = MaterialTheme.typography.bodyLarge)
+                Text(email, style = MaterialTheme.typography.bodyMedium)
+            }
+            Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                Text("Delete", color = Color.White)
+            }
+        }
     }
 }
 

@@ -4,17 +4,18 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.net.Uri
 import android.util.Log
-import android.view.ContextThemeWrapper
 import android.widget.Toast
+import android.view.ContextThemeWrapper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -35,6 +36,11 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.eventconnect.R
 import com.example.eventconnect.ui.data.EventViewModel
+import com.example.eventconnect.ui.data.Friend
+import com.example.eventconnect.ui.data.SimpleUser
+import com.example.eventconnect.ui.data.User
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,8 +51,16 @@ fun EditEventScreen(
     viewModel: EventViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
+
+    val currentUser = SimpleUser(
+        userId = viewModel.currentUser?.uid ?: "",
+        name = viewModel.currentUser?.displayName ?: "",
+        email = viewModel.currentUser?.email ?: "",
+        photoUrl = viewModel.currentUser?.photoUrl.toString()
+    )
+
+    val selectedParticipants = remember { mutableStateListOf<SimpleUser>() }
 
     // Form state
     var name by remember { mutableStateOf("") }
@@ -56,18 +70,28 @@ fun EditEventScreen(
     var time by remember { mutableStateOf("") }
     var currentImageUrl by remember { mutableStateOf("") }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
+    val friends by viewModel.friends.collectAsState()
+    val participants by viewModel.eventParticipants.collectAsState()
+    val combinedUsers = remember(friends, participants) {
+        (friends + participants)
+            .distinctBy { it.userId }
+    }
     val calendar = remember { Calendar.getInstance() }
+    val loading = remember { mutableStateOf(false) }
 
     // ViewModel state
     val event by viewModel.currentEvent
     val isLoading by viewModel.isLoadingEvent
     val isSaving by viewModel.isSaving
 
+    LaunchedEffect(Unit) {
+        viewModel.loadUserFriends(Firebase.auth.currentUser?.uid ?: "")
+    }
+
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> newImageUri = uri }
-
 
     // Load event once on enter
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
@@ -81,8 +105,29 @@ fun EditEventScreen(
             date = it.date
             time = it.time
             currentImageUrl = it.imageUrl
+
+            // Add existing participants from event (avoid duplicates)
+            selectedParticipants.clear()
+            val eventUsers = it.participants.map { simple ->
+                SimpleUser(
+                    userId = simple.userId.orEmpty(),
+                    name = simple.name.orEmpty(),
+                    email = simple.email.orEmpty(),
+                    photoUrl = simple.photoUrl.orEmpty()
+                )
+            }
+
+            selectedParticipants.addAll(eventUsers.filter { newUser ->
+                selectedParticipants.none { existing -> existing.userId == newUser.userId }
+            })
+
+            // Always include the current user if not present
+            if (selectedParticipants.none { it.userId == currentUser.userId }) {
+                selectedParticipants.add(currentUser)
+            }
         }
     }
+
 
     Scaffold(
         bottomBar = {
@@ -99,7 +144,8 @@ fun EditEventScreen(
                         context = context,
                         navController = navController,
                         scope = scope,
-                        selectedImageUri = newImageUri
+                        selectedImageUri = newImageUri,
+                        participants = selectedParticipants
                     )
                 },
                 modifier = Modifier
@@ -111,166 +157,219 @@ fun EditEventScreen(
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (isLoading) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                // Event Image area
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF2C2C2E))
-                        .clickable { imagePickerLauncher.launch("image/*") },
-                    contentAlignment = Alignment.Center
-                ) {
-                    when {
-                        newImageUri != null -> AsyncImage(
-                            model = newImageUri,
-                            contentDescription = "Selected image",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        currentImageUrl.isNotEmpty() -> AsyncImage(
-                            model = currentImageUrl,
-                            contentDescription = "Event image",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        else -> Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Add image",
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(48.dp)
-                        )
+        if (isLoading) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Używamy LazyColumn jako głównego kontenera z przewijaniem
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                // Event Image
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF2C2C2E))
+                            .clickable { imagePickerLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when {
+                            newImageUri != null -> AsyncImage(
+                                model = newImageUri,
+                                contentDescription = "Selected image",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            currentImageUrl.isNotEmpty() -> AsyncImage(
+                                model = currentImageUrl,
+                                contentDescription = "Event image",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            else -> Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Add image",
+                                tint = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
                     }
                 }
 
                 // Input fields
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Event Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = date,
-                    onValueChange = { date = it },
-                    label = { Text("Date") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            DatePickerDialog(
-                                ContextThemeWrapper(context, R.style.CustomDatePickerDialog),
-                                { _, y, m, d ->
-                                    date = "%02d/%02d/%04d".format(d, m + 1, y)
-                                },
-                                calendar.get(Calendar.YEAR),
-                                calendar.get(Calendar.MONTH),
-                                calendar.get(Calendar.DAY_OF_MONTH)
-                            ).show() }) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = "Select date")
+                item {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Event Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = date,
+                        onValueChange = { date = it },
+                        label = { Text("Date") },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                DatePickerDialog(
+                                    ContextThemeWrapper(context, R.style.CustomDatePickerDialog),
+                                    { _, y, m, d -> date = "%02d/%02d/%04d".format(d, m + 1, y) },
+                                    calendar.get(Calendar.YEAR),
+                                    calendar.get(Calendar.MONTH),
+                                    calendar.get(Calendar.DAY_OF_MONTH)
+                                ).show() }) {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = "Select date")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = time,
+                        onValueChange = { time = it },
+                        label = { Text("Time") },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                TimePickerDialog(
+                                    ContextThemeWrapper(context, R.style.CustomTimePickerDialog),
+                                    { _, h, min -> time = "%02d:%02d".format(h, min) },
+                                    calendar.get(Calendar.HOUR_OF_DAY),
+                                    calendar.get(Calendar.MINUTE),
+                                    true
+                                ).show() }) {
+                                Icon(Icons.Default.Schedule, contentDescription = "Select time")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = { Text("Location") },
+                        trailingIcon = {
+                            Icon(Icons.Default.LocationOn, contentDescription = null)
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        maxLines = 5
+                    )
+                }
+
+                // Event Photos section
+                item {
+                    val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+                        if (uris.isNotEmpty()) {
+                            loading.value = true
+                            uris.forEach { uri ->
+                                viewModel.uploadPhotoForEvent(eventId, uri, context) {
+                                    // Toast for each upload
+                                    Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = time,
-                    onValueChange = { time = it },
-                    label = { Text("Time") },
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            TimePickerDialog(
-                                ContextThemeWrapper(context, R.style.CustomTimePickerDialog),
-                                { _, h, min ->
-                                    time = "%02d:%02d".format(h, min)
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                            ).show() }) {
-                            Icon(Icons.Default.Schedule, contentDescription = "Select time")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text("Location") },
-                    trailingIcon = {
-                        Icon(Icons.Default.LocationOn, contentDescription = null)
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    maxLines = 5
-                )
-                val additionalPhotoUri = remember { mutableStateOf<Uri?>(null) }
-                val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-                    if (uri != null) {
-                        additionalPhotoUri.value = uri
-                        viewModel.uploadPhotoForEvent(eventId, uri, context) {
-                            Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
+                        loading.value = false
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Event Photos", style = MaterialTheme.typography.titleMedium)
+
+                        Row(
+                            modifier = Modifier
+                                .horizontalScroll(rememberScrollState())
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Existing photos
+                            event?.photoUrls?.forEach { photoUrl ->
+                                AsyncImage(
+                                    model = photoUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .padding(end = 8.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+
+                            // Add button
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.Gray.copy(alpha = 0.2f))
+                                    .clickable { galleryPicker.launch("image/*") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Add photo")
+                            }
                         }
                     }
                 }
-                Text("Event Photos", style = MaterialTheme.typography.titleMedium)
-                Row(
-                    modifier = Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Existing photos
-                    event?.photoUrls?.forEach { photoUrl ->
-                        AsyncImage(
-                            model = photoUrl,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .padding(end = 8.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
 
-                    // Add button
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Gray.copy(alpha = 0.2f))
-                            .clickable { galleryPicker.launch("image/*") },
-                        contentAlignment = Alignment.Center
+                item {
+                    Text("Invite Participants", style = MaterialTheme.typography.titleMedium)
+                }
+                // Invite Participants section
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Add photo")
+                        combinedUsers.forEach { participant ->
+                            val isSelected = selectedParticipants.any { it.userId == participant.userId }
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    if (isSelected) selectedParticipants.remove(participant)
+                                    else selectedParticipants.add(participant)
+                                },
+                                label = { Text(participant.name.toString()) }
+                            )
+                        }
                     }
+                }
+
+                // Dodajemy trochę przestrzeni na dole, żeby przycisk zapisu nie zasłaniał elementów
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
