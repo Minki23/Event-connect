@@ -1,6 +1,7 @@
 package com.example.eventconnect.ui.screens
 
 import android.app.DatePickerDialog
+import android.app.DownloadManager
 import android.app.TimePickerDialog
 import android.net.Uri
 import android.util.Log
@@ -13,12 +14,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
@@ -83,6 +89,9 @@ fun EditEventScreen(
     val event by viewModel.currentEvent
     val isLoading by viewModel.isLoadingEvent
     val isSaving by viewModel.isSaving
+
+    var isPhotoViewerOpen by remember { mutableStateOf(false) }
+    var selectedPhotoIndex by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.loadUserFriends(Firebase.auth.currentUser?.uid ?: "")
@@ -318,14 +327,18 @@ fun EditEventScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Existing photos
-                            event?.photoUrls?.forEach { photoUrl ->
+                            event?.photoUrls?.forEachIndexed { index, photoUrl ->
                                 AsyncImage(
                                     model = photoUrl,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(100.dp)
                                         .padding(end = 8.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            selectedPhotoIndex = index
+                                            isPhotoViewerOpen = true
+                                        },
                                     contentScale = ContentScale.Crop
                                 )
                             }
@@ -371,6 +384,85 @@ fun EditEventScreen(
                 item {
                     Spacer(modifier = Modifier.height(80.dp))
                 }
+            }
+        }
+    }
+    if (isPhotoViewerOpen && event != null) {
+        val photoUrls = event!!.photoUrls
+        val pagerState = rememberPagerState(
+            initialPage = selectedPhotoIndex,
+            pageCount = { photoUrls.size }
+        )
+        val context = LocalContext.current
+
+        LaunchedEffect(selectedPhotoIndex) {
+            pagerState.scrollToPage(selectedPhotoIndex)
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                AsyncImage(
+                    model = photoUrls[page],
+                    contentDescription = "Photo $page",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
+
+            // Close Button
+            IconButton(
+                onClick = { isPhotoViewerOpen = false },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close viewer",
+                    tint = Color.White
+                )
+            }
+
+            // Download Button
+            IconButton(
+                onClick = {
+                    val url = photoUrls[pagerState.currentPage]
+                    val request = DownloadManager.Request(Uri.parse(url)).apply {
+                        setTitle("Downloading image")
+                        setDescription("Saving image from EventConnect")
+                        setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        setDestinationInExternalPublicDir(
+                            android.os.Environment.DIRECTORY_PICTURES,
+                            "EventConnect_${System.currentTimeMillis()}.jpg"
+                        )
+                        setAllowedOverMetered(true)
+                        setAllowedOverRoaming(true)
+                    }
+
+                    val downloadManager =
+                        context.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as DownloadManager
+                    downloadManager.enqueue(request)
+
+                    Toast.makeText(context, "Downloading image...", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download, // Replace with download icon if you have
+                    contentDescription = "Download",
+                    tint = Color.White
+                )
             }
         }
     }
