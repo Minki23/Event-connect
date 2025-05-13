@@ -140,10 +140,6 @@ fun EditEventScreen(
                 selectedParticipants.none { existing -> existing.userId == newUser.userId }
             })
 
-            // Always include the current user if not present
-            if (selectedParticipants.none { it.userId == currentUser.userId }) {
-                selectedParticipants.add(currentUser)
-            }
         }
     }
 
@@ -372,28 +368,54 @@ fun EditEventScreen(
                 }
 
                 item {
-                    Text("Invite Participants", style = MaterialTheme.typography.titleMedium)
+                    Text("Participants", style = MaterialTheme.typography.titleMedium)
                 }
-                // Invite Participants section
                 item {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        combinedUsers.forEach { participant ->
-                            val isSelected = selectedParticipants.any { it.userId == participant.userId }
-                            FilterChip(
-                                selected = isSelected,
+                        selectedParticipants.forEach { participant ->
+                            AssistChip(
                                 onClick = {
-                                    if (isSelected) selectedParticipants.remove(participant)
-                                    else selectedParticipants.add(participant)
+                                    if (participant.userId != currentUser.userId) {
+                                        selectedParticipants.removeAll { it.userId == participant.userId }
+                                    }
                                 },
+                                enabled = participant.userId != currentUser.userId,
                                 label = { Text(participant.name.toString()) }
                             )
                         }
                     }
                 }
 
-                // Dodajemy trochę przestrzeni na dole, żeby przycisk zapisu nie zasłaniał elementów
+                // 2) Invite Friends section
+                item {
+                    Text("Invite Friends", style = MaterialTheme.typography.titleMedium)
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        friends
+                            .filter { friend ->
+                                // show only those not already selected
+                                selectedParticipants.none { it.userId == friend.userId }
+                            }
+                            .forEach { friend ->
+                                FilterChip(
+                                    selected = false,
+                                    onClick = {
+                                        selectedParticipants.add(friend)
+                                    },
+                                    label = { Text(friend.name.toString()) }
+                                )
+                            }
+                    }
+                }
+
+                // Spacer so the bottom bar doesn’t cover content
                 item {
                     Spacer(modifier = Modifier.height(80.dp))
                 }
