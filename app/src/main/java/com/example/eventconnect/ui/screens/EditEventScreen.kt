@@ -479,19 +479,21 @@ fun EditEventScreen(
                         tint = Color.White
                     )
                 }
-                IconButton(
-                    onClick = {
-                        val photoToRemove = photoUrls[pagerState.currentPage]
-                        viewModel.removePhotoFromEvent(eventId, photoToRemove)
-                        isPhotoViewerOpen =
-                            false
+                if(event!!.host == Firebase.auth.currentUser?.uid) {
+                    IconButton(
+                        onClick = {
+                            val photoToRemove = photoUrls[pagerState.currentPage]
+                            viewModel.removePhotoFromEvent(eventId, photoToRemove)
+                            isPhotoViewerOpen =
+                                false
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove Photo",
+                            tint = Color.White
+                        )
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Remove Photo",
-                        tint = Color.White
-                    )
                 }
             }
         }
