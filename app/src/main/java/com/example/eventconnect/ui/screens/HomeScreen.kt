@@ -95,12 +95,14 @@ fun HomeScreen(
                     contentPadding = PaddingValues(8.dp),
                 ) {
                     items(events) { event ->
+                        val isUserEvent = event.host == currentUserUid
+                        val isParticipating = event.participants.any { it.userId == currentUserUid }
                         EventItem(
                             event = event,
-                            isUserEvent = event.host == currentUserUid,
-                            isParticipating = event.participants.any { it.userId == currentUserUid },
+                            isUserEvent = isUserEvent,
+                            isParticipating = isParticipating,
                             onClick = {
-                                if (event.host == currentUserUid) {
+                                if (isUserEvent || isParticipating) {
                                     navController.navigate("edit_event/${event.id}")
                                 }
                             }
@@ -182,7 +184,7 @@ fun EventItem(
             .padding(8.dp)
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         shape = RoundedCornerShape(12.dp),
         onClick = onClick
@@ -242,7 +244,7 @@ fun EventItem(
                         Text(
                             "Host",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = Color.White,
                             fontSize = 12.sp
                         )
                     }
@@ -250,14 +252,14 @@ fun EventItem(
 
                 if (isParticipating) {
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier.padding(vertical = 2.dp)
                     ) {
                         Text(
                             "Attending",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
                             fontSize = 12.sp
                         )
                     }

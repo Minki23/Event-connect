@@ -92,6 +92,8 @@ fun EditEventScreen(
     val isLoading by viewModel.isLoadingEvent
     val isSaving by viewModel.isSaving
 
+    val isHost = event?.host == currentUser.userId
+
     var isPhotoViewerOpen by remember { mutableStateOf(false) }
     var selectedPhotoIndex by remember { mutableStateOf(0) }
 
@@ -146,29 +148,31 @@ fun EditEventScreen(
 
     Scaffold(
         bottomBar = {
-            Button(
-                onClick = {
-                    viewModel.saveEvent(
-                        event = event,
-                        name = name,
-                        location = location,
-                        description = description,
-                        date = date,
-                        time = time,
-                        imageUrl = event!!.imageUrl,
-                        context = context,
-                        navController = navController,
-                        scope = scope,
-                        selectedImageUri = newImageUri,
-                        participants = selectedParticipants
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = !isSaving && !viewModel.isUploadingPhoto.value && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
-            ) {
-                Text(if (isSaving) "Saving..." else "Save Changes")
+            if (isHost) {
+                Button(
+                    onClick = {
+                        viewModel.saveEvent(
+                            event = event,
+                            name = name,
+                            location = location,
+                            description = description,
+                            date = date,
+                            time = time,
+                            imageUrl = event!!.imageUrl,
+                            context = context,
+                            navController = navController,
+                            scope = scope,
+                            selectedImageUri = newImageUri,
+                            participants = selectedParticipants
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    enabled = !isSaving && !viewModel.isUploadingPhoto.value && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
+                ) {
+                    Text(if (isSaving) "Saving..." else "Save Changes")
+                }
             }
         }
     ) { innerPadding ->
@@ -226,83 +230,113 @@ fun EditEventScreen(
                 }
 
                 // Input fields
-                item {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Event Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                if (isHost) {
+                    item {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Event Name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = date,
-                        onValueChange = { date = it },
-                        label = { Text("Date") },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                DatePickerDialog(
-                                    ContextThemeWrapper(context, R.style.CustomDatePickerDialog),
-                                    { _, y, m, d -> date = "%02d/%02d/%04d".format(d, m + 1, y) },
-                                    calendar.get(Calendar.YEAR),
-                                    calendar.get(Calendar.MONTH),
-                                    calendar.get(Calendar.DAY_OF_MONTH)
-                                ).show() }) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = "Select date")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                    item {
+                        OutlinedTextField(
+                            value = date,
+                            onValueChange = { date = it },
+                            label = { Text("Date") },
+                            readOnly = true,
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    DatePickerDialog(
+                                        ContextThemeWrapper(context, R.style.CustomDatePickerDialog),
+                                        { _, y, m, d -> date = "%02d/%02d/%04d".format(d, m + 1, y) },
+                                        calendar.get(Calendar.YEAR),
+                                        calendar.get(Calendar.MONTH),
+                                        calendar.get(Calendar.DAY_OF_MONTH)
+                                    ).show()
+                                }) {
+                                    Icon(Icons.Default.CalendarMonth, contentDescription = "Select date")
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = time,
-                        onValueChange = { time = it },
-                        label = { Text("Time") },
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                TimePickerDialog(
-                                    ContextThemeWrapper(context, R.style.CustomTimePickerDialog),
-                                    { _, h, min -> time = "%02d:%02d".format(h, min) },
-                                    calendar.get(Calendar.HOUR_OF_DAY),
-                                    calendar.get(Calendar.MINUTE),
-                                    true
-                                ).show() }) {
-                                Icon(Icons.Default.Schedule, contentDescription = "Select time")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                    item {
+                        OutlinedTextField(
+                            value = time,
+                            onValueChange = { time = it },
+                            label = { Text("Time") },
+                            readOnly = true,
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    TimePickerDialog(
+                                        ContextThemeWrapper(context, R.style.CustomTimePickerDialog),
+                                        { _, h, min -> time = "%02d:%02d".format(h, min) },
+                                        calendar.get(Calendar.HOUR_OF_DAY),
+                                        calendar.get(Calendar.MINUTE),
+                                        true
+                                    ).show()
+                                }) {
+                                    Icon(Icons.Default.Schedule, contentDescription = "Select time")
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = { Text("Location") },
-                        trailingIcon = {
-                            Icon(Icons.Default.LocationOn, contentDescription = null)
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                    item {
+                        OutlinedTextField(
+                            value = location,
+                            onValueChange = { location = it },
+                            label = { Text("Location") },
+                            trailingIcon = {
+                                Icon(Icons.Default.LocationOn, contentDescription = null)
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = description,
-                        onValueChange = { description = it },
-                        label = { Text("Description") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-                        maxLines = 5
-                    )
+                    item {
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Description") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            maxLines = 5
+                        )
+                    }
+
+                } else {
+                    item {
+                        Text("Event Name: $name", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    item {
+                        Text("Date: $date", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    item {
+                        Text("Time: $time", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    item {
+                        Text("Location: $location", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    item {
+                        Text("Description:", style = MaterialTheme.typography.bodyLarge)
+                        Text(description, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    item {
+                        Text(
+                            "You can only add photos to this event.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
                 }
 
                 // Event Photos section
@@ -381,43 +415,38 @@ fun EditEventScreen(
                         selectedParticipants.forEach { participant ->
                             AssistChip(
                                 onClick = {
-                                    if (participant.userId != currentUser.userId) {
+                                    if (isHost && participant.userId != currentUser.userId) {
                                         selectedParticipants.removeAll { it.userId == participant.userId }
                                     }
                                 },
-                                enabled = participant.userId != currentUser.userId,
+                                enabled = isHost && participant.userId != currentUser.userId,
                                 label = { Text(participant.name.toString()) }
                             )
                         }
                     }
                 }
 
-                // 2) Invite Friends section
-                item {
-                    Text("Invite Friends", style = MaterialTheme.typography.titleMedium)
-                }
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        friends
-                            .filter { friend ->
-                                // show only those not already selected
-                                selectedParticipants.none { it.userId == friend.userId }
-                            }
-                            .forEach { friend ->
-                                FilterChip(
-                                    selected = false,
-                                    onClick = {
-                                        selectedParticipants.add(friend)
-                                    },
-                                    label = { Text(friend.name.toString()) }
-                                )
-                            }
+                if (isHost) {
+                    item {
+                        Text("Invite Friends", style = MaterialTheme.typography.titleMedium)
                     }
-                }
-
-                // Spacer so the bottom bar doesn’t cover content
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            friends
+                                .filter { friend ->
+                                    selectedParticipants.none { it.userId == friend.userId }
+                                }
+                                .forEach { friend ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            selectedParticipants.add(friend)
+                                        },
+                                        label = { Text(friend.name.toString()) }
+                                    )
+                                }
+                        }
+                    }
                 }
             }
         }

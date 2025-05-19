@@ -26,9 +26,9 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
     val viewModel = remember { FriendsViewModel(db, currentUser?.uid ?: "", currentUser?.email ?: "") }
 
     val friends by viewModel.friends.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val friendRequests by viewModel.friendRequests.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var showCreateUserDialog by remember { mutableStateOf(false) }
@@ -38,67 +38,71 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
         viewModel.fetchFriends()
         viewModel.fetchFriendRequests()
     }
-    LaunchedEffect(searchQuery) {
-        viewModel.searchUsers(searchQuery)
+
+    val filteredFriends = if (searchQuery.isNotEmpty()) {
+        friends.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+                    it.email.contains(searchQuery, ignoreCase = true)
+        }
+    } else {
+        friends
     }
 
-    Scaffold{ paddingValues ->
-        LazyColumn(
+    Scaffold { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            item {
-                Text(text = "Friends", style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(16.dp))
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth()
+            Text(text = "Friends", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(16.dp))
+
+            // Search bar
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(16.dp))
+
+            if (error.isNotEmpty()) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
-                Spacer(Modifier.height(16.dp))
-                Row(
+            }
+
+            if (isLoading) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = { showCreateUserDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
-                    ) { Text("Create User") }
-
-                    Button(
-                        onClick = { showAddFriendDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
-                    ) { Text("Add Friend") }
+                    CircularProgressIndicator()
                 }
             }
-            when {
-                isLoading -> item { LoadingIndicator() }
-                error.isNotEmpty() -> item { ErrorMessage(error) }
-                searchQuery.isNotEmpty() -> {
-                    if (searchResults.isEmpty()) {
-                        item { Text("No users found", color = Color.White) }
-                    } else {
-                        items(searchResults) { user ->
-                            UserResultItem(user = user, onAdd = { viewModel.sendFriendRequest(user.uid) })
-                        }
-                    }
-                }
-                else -> {
-                    item { Text("Your Friends", style = MaterialTheme.typography.titleMedium) }
-                    if (friends.isEmpty()) {
-                        item { Text("No friends yet", color = Color.White) }
-                    } else {
-                        items(friends) { friend ->
-                            FriendItem(name = friend.name, email = friend.email) {
-                                viewModel.deleteFriend(friend.email)
-                            }
-                        }
 
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = if (searchQuery.isNotEmpty()) "Filtered Friends" else "Your Friends",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
+                if (filteredFriends.isEmpty() && !isLoading) {
+                    item { Text("No matching friends found", color = Color.Gray) }
+                } else {
+                    items(filteredFriends) { friend ->
+                        FriendItem(name = friend.name, email = friend.email) {
+                            viewModel.deleteFriend(friend.email)
+                        }
                     }
                 }
             }
@@ -170,7 +174,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
     }
 }
 
-
 @Composable
 private fun SearchBar(
     query: String,
@@ -192,26 +195,6 @@ private fun SearchBar(
 }
 
 @Composable
-private fun UserResultItem(user: User, onAdd: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(user.displayName, style = MaterialTheme.typography.bodyLarge)
-                Text(user.email, style = MaterialTheme.typography.bodyMedium)
-            }
-            Button(onClick = onAdd) { Text("Add Friend") }
-        }
-    }
-}
-
-@Composable
 private fun FriendItem(name: String, email: String, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
@@ -229,25 +212,12 @@ private fun FriendItem(name: String, email: String, onDelete: () -> Unit) {
                 Text(name, style = MaterialTheme.typography.bodyLarge)
                 Text(email, style = MaterialTheme.typography.bodyMedium)
             }
-            Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+            Button(
+                onClick = onDelete,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
                 Text("Delete", color = Color.White)
             }
         }
     }
-}
-
-@Composable
-private fun LoadingIndicator() {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorMessage(error: String) {
-    Text(
-        text = error,
-        color = MaterialTheme.colorScheme.error,
-        modifier = Modifier.padding(16.dp)
-    )
 }

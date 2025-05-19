@@ -1,3 +1,4 @@
+
 // FriendsViewModel.kt
 package com.example.eventconnect.ui.data
 
@@ -17,6 +18,9 @@ class FriendsViewModel(
 ) : ViewModel() {
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
     val friends = _friends.asStateFlow()
+
+    private val _filteredFriends = MutableStateFlow<List<Friend>>(emptyList())
+    val filteredFriends = _filteredFriends.asStateFlow()
 
     private val _searchResults = MutableStateFlow<List<User>>(emptyList())
     val searchResults = _searchResults.asStateFlow()
@@ -65,8 +69,7 @@ class FriendsViewModel(
             .whereEqualTo("status", "pending")
             .get()
             .addOnSuccessListener { snapshots ->
-                val requests = snapshots.mapNotNull { it.toObject<FriendRequest>()
-                }
+                val requests = snapshots.mapNotNull { it.toObject<FriendRequest>() }
                 _friendRequests.value = requests
                 _isLoading.value = false
             }
@@ -77,25 +80,38 @@ class FriendsViewModel(
     }
 
     fun acceptRequest(request: FriendRequest) {
-        val senderFriends = db.collection("users").document(request.senderEmail).collection("friends")
-        val receiverFriends = db.collection("users").document(currentUserEmail).collection("friends")
+        val senderFriends = db.collection("users").document(request.senderId).collection("friends")
+        val receiverFriends = db.collection("users").document(currentUserId).collection("friends")
 
         senderFriends.document(currentUserId).set(
-            mapOf("userId" to currentUserId, "name" to FirebaseAuth.getInstance().currentUser?.displayName, "email" to FirebaseAuth.getInstance().currentUser?.email)
-        )
-        receiverFriends.document(request.senderEmail).set(
-            mapOf("userId" to request.senderEmail)
+            mapOf(
+                "userId" to currentUserId,
+                "name" to FirebaseAuth.getInstance().currentUser?.displayName,
+                "email" to FirebaseAuth.getInstance().currentUser?.email
+            )
         )
 
-        db.collection("friendRequests").document(request.senderEmail)
+        receiverFriends.document(request.senderId).set(
+            mapOf(
+                "userId" to request.senderId,
+                "name" to request.senderEmail,  // We should improve this to get the actual name
+                "email" to request.senderEmail
+            )
+        )
+
+        db.collection("friendRequests").document(request.senderId + "_" + currentUserId)
             .update("status", "accepted")
-
-        fetchFriends()
-        fetchFriendRequests()
+            .addOnSuccessListener {
+                fetchFriends()
+                fetchFriendRequests()
+            }
+            .addOnFailureListener { e ->
+                _error.value = "Failed to accept request: ${e.message}"
+            }
     }
 
     fun declineRequest(request: FriendRequest) {
-        db.collection("friendRequests").document(request.senderEmail)
+        db.collection("friendRequests").document(request.senderId + "_" + currentUserId)
             .update("status", "declined")
             .addOnSuccessListener {
                 fetchFriendRequests()
@@ -119,21 +135,44 @@ class FriendsViewModel(
             }
     }
 
+    fun searchFriends(query: String) {
+        if (query.isBlank()) {
+            _filteredFriends.value = _friends.value // Show all if query is empty
+            return
+        }
+
+        val lowercaseQuery = query.lowercase()
+
+        _filteredFriends.value = _friends.value.filter { friend ->
+            friend.name.lowercase().contains(lowercaseQuery) ||
+                    friend.email.lowercase().contains(lowercaseQuery)
+        }
+    }
+
     fun searchUsers(query: String) {
         if (query.isEmpty()) {
             _searchResults.value = emptyList()
             return
         }
+
         _isLoading.value = true
+
+        // Case insensitive search - start with lowercase query
+        val lowercaseQuery = query.lowercase()
+
         db.collection("users")
-            .whereGreaterThanOrEqualTo("name", query)
-            .whereLessThanOrEqualTo("name", query + "\uf8ff")
             .get()
             .addOnSuccessListener { documents ->
                 val users = documents.mapNotNull { doc ->
-                    doc.toObject<User>().copy(uid = doc.id)
-                }.filter { user ->
-                    user.uid != currentUserId
+                    val user = doc.toObject<User>().copy(uid = doc.id)
+                    // Check if name or email contains query (case insensitive)
+                    if ((user.displayName.lowercase().contains(lowercaseQuery) ||
+                                user.email.lowercase().contains(lowercaseQuery)) &&
+                        user.uid != currentUserId) {
+                        user
+                    } else {
+                        null
+                    }
                 }
                 _searchResults.value = users
                 _isLoading.value = false
@@ -145,21 +184,59 @@ class FriendsViewModel(
     }
 
     fun sendFriendRequest(receiverEmail: String) {
-        val request = hashMapOf(
-            "senderId" to currentUserId,
-            "senderEmail" to currentUserEmail,
-            "receiverEmail" to receiverEmail,
-            "status" to "pending",
-            "timestamp" to FieldValue.serverTimestamp()
-        )
+        if (receiverEmail.isEmpty()) {
+            _error.value = "Receiver email cannot be empty"
+            return
+        }
 
-        // Show a success message after sending the request
-        db.collection("friendRequests").add(request)
-            .addOnSuccessListener {
-                _error.value = "Friend request sent successfully"
-            }
-            .addOnFailureListener { e ->
-                _error.value = "Failed to send request: ${e.message}"
+        // First check if we already have a pending request to this user
+        db.collection("friendRequests")
+            .whereEqualTo("senderEmail", currentUserEmail)
+            .whereEqualTo("receiverEmail", receiverEmail)
+            .whereEqualTo("status", "pending")
+            .get()
+            .addOnSuccessListener { existingRequests ->
+                if (!existingRequests.isEmpty) {
+                    _error.value = "You already sent a request to this user"
+                    return@addOnSuccessListener
+                }
+
+                // Find the user ID for the receiver email
+                db.collection("users")
+                    .whereEqualTo("email", receiverEmail)
+                    .get()
+                    .addOnSuccessListener { userDocs ->
+                        if (userDocs.isEmpty) {
+                            _error.value = "User with email $receiverEmail not found"
+                            return@addOnSuccessListener
+                        }
+
+                        val receiverId = userDocs.documents.first().id
+
+                        val request = hashMapOf(
+                            "senderId" to currentUserId,
+                            "senderEmail" to currentUserEmail,
+                            "receiverId" to receiverId,
+                            "receiverEmail" to receiverEmail,
+                            "status" to "pending",
+                            "timestamp" to FieldValue.serverTimestamp()
+                        )
+
+                        // Use a composite document ID to ensure uniqueness
+                        val requestId = currentUserId + "_" + receiverId
+
+                        db.collection("friendRequests").document(requestId)
+                            .set(request)
+                            .addOnSuccessListener {
+                                _error.value = "Friend request sent successfully"
+                            }
+                            .addOnFailureListener { e ->
+                                _error.value = "Failed to send request: ${e.message}"
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        _error.value = "Failed to find user: ${e.message}"
+                    }
             }
     }
 
@@ -170,17 +247,29 @@ class FriendsViewModel(
         }
 
         val newUser = hashMapOf(
-            "name" to name,
-            "email" to email
+            "displayName" to name,
+            "email" to email,
+            "photoUrl" to ""
         )
 
+        // First check if user with this email already exists
         db.collection("users")
-            .add(newUser)
-            .addOnSuccessListener {
-                _error.value = "User created successfully"
-            }
-            .addOnFailureListener { e ->
-                _error.value = "Error creating user: ${e.message}"
+            .whereEqualTo("email", email)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+                    _error.value = "User with this email already exists"
+                    return@addOnSuccessListener
+                }
+
+                db.collection("users")
+                    .add(newUser)
+                    .addOnSuccessListener {
+                        _error.value = "User created successfully"
+                    }
+                    .addOnFailureListener { e ->
+                        _error.value = "Error creating user: ${e.message}"
+                    }
             }
     }
 
@@ -199,8 +288,23 @@ class FriendsViewModel(
                     return@addOnSuccessListener
                 }
 
-                val user = documents.first().toObject(User::class.java)
-                sendFriendRequest(user.email)
+                val userDoc = documents.first()
+                val user = userDoc.toObject(User::class.java)
+                val userId = userDoc.id
+
+                // Check if this person is already your friend
+                db.collection("users").document(currentUserId).collection("friends")
+                    .whereEqualTo("email", email)
+                    .get()
+                    .addOnSuccessListener { friendDocs ->
+                        if (!friendDocs.isEmpty) {
+                            _error.value = "This user is already your friend"
+                            return@addOnSuccessListener
+                        }
+
+                        // Send friend request
+                        sendFriendRequest(email)
+                    }
             }
             .addOnFailureListener { e ->
                 _error.value = "Search failed: ${e.message}"
@@ -216,7 +320,6 @@ class FriendsViewModel(
             _error.value = "Email cannot be empty"
             return
         }
-
 
         // First check if the user is already a friend
         db.collection("users").document(currentUserId).collection("friends")
@@ -244,11 +347,15 @@ class FriendsViewModel(
                         db.collection("users").document(currentUserId).collection("friends")
                             .document(userId)
                             .set(mapOf(
-                                "userId" to user.uid,
+                                "userId" to userId,
                                 "name" to user.displayName,
                                 "email" to user.email,
                                 "imageUrl" to user.photoUrl
                             ))
+                            .addOnSuccessListener {
+                                fetchFriends()
+                                _error.value = "Friend added successfully"
+                            }
                             .addOnFailureListener { e ->
                                 _error.value = "Failed to add friend: ${e.message}"
                             }
@@ -261,6 +368,7 @@ class FriendsViewModel(
                 _error.value = "Failed to check existing friends: ${e.message}"
             }
     }
+
     fun deleteFriend(friendEmail: String) {
         val userDoc = db.collection("users").document(currentUserId)
 
@@ -305,7 +413,6 @@ class FriendsViewModel(
             }
     }
 }
-
 
 data class User(
     val uid: String = "",

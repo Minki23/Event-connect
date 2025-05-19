@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.eventconnect.ui.data.FriendsViewModel
@@ -20,7 +21,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 /**
- * Screen for finding and sending friend invitations to users
+ * Screen for finding and sending friend invitations to users (Users only, no tabs)
  * @param onBack lambda to pop back
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,61 +40,259 @@ fun InvitationsScreen(onBack: () -> Unit) {
 
     var searchQuery by remember { mutableStateOf("") }
 
-    // Fetch all users when the screen is first shown
+    // Fetch all users and friend requests when the screen is first shown
     LaunchedEffect(Unit) {
         viewModel.fetchAllUsers()
+        viewModel.fetchFriends()
+    }
+
+    // Perform search when the query changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            viewModel.searchUsers(searchQuery)
+        }
     }
 
     Scaffold(
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-
-            when {
-                isLoading -> { LoadingIndicator() }
-                error.isNotEmpty() -> { ErrorMessage(error) }
-                searchQuery.isNotEmpty() && searchResults.isEmpty() -> {
-                    Text(
-                        "No users found with that name",
-                        color = colors.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp)
-                    )
+        topBar = {
+            TopAppBar(
+                title = { Text("Find Friends") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.fetchAllUsers() }) {
+                        Icon(Icons.Default.Search, contentDescription = "Refresh")
+                    }
                 }
-                else -> {
-                    // Display header text based on whether we're showing search results or all users
+            )
+        },
+        contentColor = colors.onBackground
+    ) { paddingValues ->
+        UsersTab(
+            searchQuery = searchQuery,
+            onSearchChange = { searchQuery = it },
+            viewModel = viewModel,
+            searchResults = searchResults,
+            allUsers = allUsers,
+            friends = friends,
+            isLoading = isLoading,
+            error = error,
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun UsersTab(
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    viewModel: FriendsViewModel,
+    searchResults: List<User>,
+    allUsers: List<User>,
+    friends: List<com.example.eventconnect.ui.data.Friend>,
+    isLoading: Boolean,
+    error: String,
+    modifier: Modifier = Modifier
+) {
+    val currentUser = Firebase.auth.currentUser
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        // Search box
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            placeholder = { Text("Search by name or email") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent
+            )
+        )
+
+        // Display error message if any
+        if (error.isNotEmpty() && !error.contains("success")) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        } else if (error.contains("success")) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+
+        when {
+            isLoading -> { LoadingIndicator() }
+            searchQuery.isNotEmpty() && searchResults.isEmpty() -> {
+                Text(
+                    "No users found with that name or email",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+            else -> {
+                Text(
+                    text = if (searchQuery.isEmpty()) "All Users" else "Search Results",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                val usersToDisplay = if (searchQuery.isEmpty()) allUsers else searchResults
+
+                if (usersToDisplay.isEmpty() && !isLoading) {
                     Text(
-                        text = if (searchQuery.isEmpty()) "All Users" else "Search Results",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        "No users found",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
-
-                    // Show either search results or all users
-                    val usersToDisplay = if (searchQuery.isEmpty()) allUsers else searchResults
-
-                    if (usersToDisplay.isEmpty() && !isLoading) {
-                        Text(
-                            "No users found",
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(usersToDisplay) { user ->
-                                UserCard(
-                                    user = user,
-                                    alreadyFriend = friends.any { it.userId == user.uid },
-                                    onSendRequest = {
-                                        viewModel.addFriend(currentUser?.uid ?: "", user.email)
-                                    }
-                                )
-                            }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(usersToDisplay) { user ->
+                            UserCard(
+                                user = user,
+                                alreadyFriend = friends.any { it.email == user.email },
+                                onSendRequest = {
+                                    viewModel.addFriend(user.uid, user.email)
+                                }
+                            )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InvitationsTab(
+    viewModel: FriendsViewModel,
+    friendRequests: List<com.example.eventconnect.models.FriendRequest>,
+    isLoading: Boolean,
+    error: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Error message
+        if (error.isNotEmpty()) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
+        // Title
+        Text(
+            text = "Friend Requests",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        when {
+            isLoading -> LoadingIndicator()
+            friendRequests.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No pending friend requests",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(friendRequests) { request ->
+                        RequestCard(
+                            senderEmail = request.senderEmail,
+                            onAccept = { viewModel.acceptRequest(request) },
+                            onDecline = { viewModel.declineRequest(request) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RequestCard(
+    senderEmail: String,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = senderEmail,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onAccept,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Accept")
+                }
+
+                OutlinedButton(
+                    onClick = onDecline,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Decline")
                 }
             }
         }
@@ -109,7 +308,7 @@ private fun UserCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -122,7 +321,7 @@ private fun UserCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = user.displayName,
                     color = MaterialTheme.colorScheme.onSurface,
