@@ -48,21 +48,6 @@ fun InvitationsScreen(onBack: () -> Unit) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Find Friends") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.fetchAllUsers() }) {
-                        Icon(Icons.Default.Search, contentDescription = "Refresh")
-                    }
-                }
-            )
-        },
         contentColor = colors.onBackground
     ) { paddingValues ->
         UsersTab(

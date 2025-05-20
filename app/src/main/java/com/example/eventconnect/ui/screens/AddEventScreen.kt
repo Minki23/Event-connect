@@ -45,10 +45,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.EventViewModel
@@ -100,32 +103,67 @@ fun AddEventScreen(
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text("Choose Option") },
+                title = {
+                    Text(
+                        text = "Choose Option",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 text = {
-                    Column {
-                        TextButton(onClick = {
-                            showDialog = false
-                            galleryLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = {
+                                showDialog = false
+                                galleryLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Choose from gallery",
+                                color = colors.onBackground
                             )
-                        }) { Text("Choose from gallery") }
-                        TextButton(onClick = {
-                            showDialog = false
-                            val photoFile = viewModel.createImageFile(context)
-                            val uri = androidx.core.content.FileProvider.getUriForFile(
-                                context, context.packageName + ".provider", photoFile
+                        }
+
+                        TextButton(
+                            onClick = {
+                                showDialog = false
+                                val photoFile = viewModel.createImageFile(context)
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider",
+                                    photoFile
+                                )
+                                currentPhotoUri = uri
+                                cameraLauncher.launch(uri)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Take a photo",
+                                color = colors.onBackground
                             )
-                            currentPhotoUri = uri
-                            cameraLauncher.launch(uri)
-                        }) { Text("Take a photo") }
+                        }
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
+                    TextButton(
+                        onClick = { showDialog = false },
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = colors.onBackground
+                        )
                     }
-                }
+                },
+                modifier = Modifier.padding(16.dp)
             )
+
         }
 
         Spacer(Modifier.height(16.dp))
@@ -134,11 +172,11 @@ fun AddEventScreen(
             onClick = { showDialog = true },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = Color.White
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = colors.onPrimary)
+            Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = Color.White)
             Spacer(Modifier.width(8.dp))
             Text("Upload Photo")
         }
@@ -210,7 +248,7 @@ fun AddEventScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Date:",  color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                Text("Date:",  color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                 Button(
                     onClick = {
                         DatePickerDialog(
@@ -228,14 +266,14 @@ fun AddEventScreen(
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
                     shape = RoundedCornerShape(8.dp)
-                ) { Text(selectedDate, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                ) { Text(selectedDate, color = Color.White) }
             }
             Spacer(Modifier.width(16.dp))
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Time:",  color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                Text("Time:",  color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                 Button(
                     onClick = {
                         TimePickerDialog(
@@ -255,7 +293,7 @@ fun AddEventScreen(
                     shape = RoundedCornerShape(8.dp)
                 ) { Text(
                     selectedTime,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = Color.White
                 )  }
             }
         }
@@ -325,11 +363,12 @@ fun AddEventScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.size(width = 120.dp, height = 48.dp)
             ) {
-                Text("Add Event", color = MaterialTheme.colorScheme.onPrimary)
+                Text("Add Event", color = Color.White)
             }
         }
     }
 }
+
 
 
 

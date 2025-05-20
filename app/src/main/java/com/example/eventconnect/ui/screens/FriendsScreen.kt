@@ -53,9 +53,6 @@ fun FriendsScreen() {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Text(text = "Friends", style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(16.dp))
-
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },

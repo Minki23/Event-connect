@@ -183,7 +183,10 @@ fun EditEventScreen(
                         .padding(16.dp),
                     enabled = !isSaving && !viewModel.isUploadingPhoto.value && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
                 ) {
-                    Text(if (isSaving) "Saving..." else "Save Changes")
+                    Text(
+                        text = if (isSaving) "Saving..." else "Save Changes",
+                        color = Color.White
+                    )
                 }
             }
         }
