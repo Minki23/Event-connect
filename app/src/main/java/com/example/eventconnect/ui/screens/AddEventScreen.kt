@@ -1,7 +1,5 @@
 package com.example.eventconnect.ui.screens
 
-import LocalFirestore
-import LocalStorage
 import com.example.eventconnect.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -27,7 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.OutlinedTextField
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoCamera
