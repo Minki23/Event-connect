@@ -14,13 +14,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.eventconnect.ui.data.FriendsViewModel
-import com.example.eventconnect.ui.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FriendsScreen(navigateToInvitations: () -> Unit) {
+fun FriendsScreen() {
     val db = LocalFirestore.current
     val currentUser = Firebase.auth.currentUser
     val viewModel = remember { FriendsViewModel(db, currentUser?.uid ?: "", currentUser?.email ?: "") }
@@ -28,7 +27,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
     val friends by viewModel.friends.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val friendRequests by viewModel.friendRequests.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var showCreateUserDialog by remember { mutableStateOf(false) }
@@ -58,7 +56,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
             Text(text = "Friends", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(16.dp))
 
-            // Search bar
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
@@ -108,7 +105,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
             }
         }
 
-        // Create User Dialog
         if (showCreateUserDialog) {
             var userName by remember { mutableStateOf("") }
             var userEmail by remember { mutableStateOf("") }
@@ -145,7 +141,6 @@ fun FriendsScreen(navigateToInvitations: () -> Unit) {
             )
         }
 
-        // Add Friend Dialog
         if (showAddFriendDialog) {
             var friendEmail by remember { mutableStateOf("") }
 

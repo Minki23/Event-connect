@@ -11,11 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-val BluePrimary = Color(0xFF007BFF)
-val WhitePrimary = Color(0xFFFFFFFF)
-val GrayPrimary = Color(0xFF808080)
-val BlackPrimary = Color(0xFF000000)
-val BluePrimaryVariant = Color(0xFF005FCC)
 private val LightColorScheme = lightColorScheme(
     primary = BluePrimary,
     onPrimary = WhitePrimary,
@@ -67,7 +62,7 @@ fun EventConnectTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }

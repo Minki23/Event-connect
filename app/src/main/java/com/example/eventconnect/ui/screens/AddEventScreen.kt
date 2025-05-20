@@ -57,12 +57,11 @@ import java.util.Calendar
 
 @Composable
 fun AddEventScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onCreate: () -> Unit = {}
 ) {
     val user = FirebaseAuth.getInstance().currentUser
     val context = LocalContext.current
-    val db = LocalFirestore.current
-    val storage = LocalStorage.current
 
     val viewModel: EventViewModel = viewModel()
 
@@ -80,7 +79,6 @@ fun AddEventScreen(
 
     val colors = MaterialTheme.colorScheme
 
-    // Launchery do galerii i aparatu
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) photoUri = uri }
@@ -162,7 +160,6 @@ fun AddEventScreen(
             Spacer(Modifier.height(24.dp))
         }
 
-        // TextFields
         OutlinedTextField(
             value = eventName, onValueChange = { eventName = it },
             label = { Text("Event Name") },
@@ -175,7 +172,9 @@ fun AddEventScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         )
+
         Spacer(Modifier.height(12.dp))
+
         OutlinedTextField(
             value = location, onValueChange = { location = it },
             label = { Text("Location") },
@@ -188,7 +187,9 @@ fun AddEventScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         )
+
         Spacer(Modifier.height(12.dp))
+
         OutlinedTextField(
             value = description, onValueChange = { description = it },
             label = { Text("Description") },
@@ -268,7 +269,6 @@ fun AddEventScreen(
         } else {
             Button(
                 onClick = {
-                    // walidacja
                     if (eventName.isBlank()) {
                         Toast.makeText(context, "Please enter event name", Toast.LENGTH_SHORT).show()
                         return@Button
@@ -278,18 +278,16 @@ fun AddEventScreen(
                         return@Button
                     }
 
-                    // przygotuj URI do uploadu
                     val uploadUri: Uri? = photoUri?.let { uri ->
                         if (uri.scheme == "content") {
-                            viewModel.copyUriToFile(context, uri)?.let { FileUri ->
-                                Uri.fromFile(FileUri)
+                            viewModel.copyUriToFile(context, uri)?.let { fileUri ->
+                                Uri.fromFile(fileUri)
                             }
                         } else {
                             uri
                         }
                     }
 
-                    // wywołaj dodanie eventu
                     isLoading = true
                     if (user != null) {
                         viewModel.addEvent(
@@ -311,6 +309,7 @@ fun AddEventScreen(
                                 selectedTime = "18:30"
                                 photoUri = null
                                 currentPhotoUri = null
+                                onCreate()
                             },
                             onError = { errorMessage ->
                                 isLoading = false

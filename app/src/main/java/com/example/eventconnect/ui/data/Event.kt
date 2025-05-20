@@ -1,7 +1,5 @@
 package com.example.eventconnect.ui.data
 
-import com.google.firebase.auth.FirebaseUser
-
 data class SimpleUser(
     val userId: String? = "",
     val name: String? = "",

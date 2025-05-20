@@ -76,31 +76,23 @@ class MainActivity : ComponentActivity() {
         }
         FirebaseApp.initializeApp(this)
     }
+
     fun launchCredentialManager() {
-        // [START create_credential_manager_request]
-        // Instantiate a Google sign-in request
         val googleIdOption = GetGoogleIdOption.Builder()
-            // Your server's client ID, not your Android client ID.
             .setServerClientId(getString(R.string.default_web_client_id))
-            // Only show accounts previously used to sign in.
             .setFilterByAuthorizedAccounts(false)
             .build()
 
-        // Create the Credential Manager request
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
-        // [END create_credential_manager_request]
 
         lifecycleScope.launch {
             try {
-                // Launch Credential Manager UI
                 val result = credentialManager.getCredential(
                     context = baseContext,
                     request = request
                 )
-
-                // Extract credential from the result returned by Credential Manager
                 handleSignIn(result.credential)
             } catch (e: GetCredentialException) {
                 Log.e(TAG, "Credential error type: ${e::class.java.simpleName}")
@@ -109,40 +101,35 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    private fun handleSignIn(credential: Credential) {
-        // Check if credential is of type Google ID
-        if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-            // Create Google ID Token
-            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
 
-            // Sign in to Firebase with using the token
+    private fun handleSignIn(credential: Credential) {
+        if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
             firebaseAuthWithGoogle(googleIdTokenCredential.idToken)
         } else {
             Log.w(TAG, "Credential is not of type Google ID!")
         }
     }
+
     private fun firebaseAuthWithGoogle(idToken: String) {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Sign in success, update UI with the signed-in user's information
                     Log.d(TAG, "signInWithCredential:success")
                     val user = auth.currentUser
                     updateUI(user)
                 } else {
-                    // If sign in fails, display a message to the user
                     Log.w(TAG, "signInWithCredential:failure", task.exception)
                     updateUI(null)
                 }
             }
     }
+
     private fun updateUI(user: FirebaseUser?) {
         if (user != null) {
-            // Save user data to Firestore
             saveUserToFirestore(user)
 
-            // Navigate to main screen
             navController.navigate("main") {
                 popUpTo("login") { inclusive = true }
             }
@@ -150,7 +137,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveUserToFirestore(user: FirebaseUser) {
-        // Create a user map with the user data
         val userData = hashMapOf(
             "uid" to user.uid,
             "email" to user.email,
@@ -159,14 +145,11 @@ class MainActivity : ComponentActivity() {
             "lastLogin" to System.currentTimeMillis()
         )
 
-        // Reference to the users collection
         val usersCollection = db.collection("users")
 
-        // Check if user document already exists
         usersCollection.document(user.uid).get()
             .addOnSuccessListener { document ->
                 if (document.exists()) {
-                    // Update existing user
                     usersCollection.document(user.uid)
                         .update("lastLogin", System.currentTimeMillis())
                         .addOnSuccessListener {
@@ -176,7 +159,6 @@ class MainActivity : ComponentActivity() {
                             Log.e(TAG, "Error updating user login time", e)
                         }
                 } else {
-                    // Create new user
                     usersCollection.document(user.uid)
                         .set(userData)
                         .addOnSuccessListener {

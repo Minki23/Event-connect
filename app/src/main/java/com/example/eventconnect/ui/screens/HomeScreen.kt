@@ -55,14 +55,11 @@ fun HomeScreen(
         viewModel.fetchEvents()
     }
     Column(modifier = Modifier.fillMaxSize()) {
-        // Filter
-        // tabs
         FilterTabs(
             selectedFilter = selectedFilter,
             onFilterSelected = { viewModel.setFilter(it) }
         )
 
-        // Content
         when {
             isLoading -> {
                 Box(
@@ -169,8 +166,6 @@ fun FilterTab(
     )
 }
 
-
-// Event Item component for display in the list
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventItem(

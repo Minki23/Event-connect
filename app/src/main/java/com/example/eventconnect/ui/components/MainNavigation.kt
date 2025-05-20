@@ -2,11 +2,9 @@ package com.example.eventconnect.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.eventconnect.ui.data.UserViewModel
 import com.example.eventconnect.ui.screens.LoginScreen
 import com.example.eventconnect.ui.screens.MainScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -26,7 +24,7 @@ fun MainNavigation(innerPadding: PaddingValues, navController: NavHostController
             )
         }
         composable("main") {
-            MainScreen()
+            MainScreen(onGoogleLogin = { onGoogleLogin() })
         }
     }
 }

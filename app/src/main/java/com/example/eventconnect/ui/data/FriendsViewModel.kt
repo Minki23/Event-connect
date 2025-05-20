@@ -1,10 +1,9 @@
-
-// FriendsViewModel.kt
 package com.example.eventconnect.ui.data
 
 import androidx.lifecycle.ViewModel
 import com.example.eventconnect.models.FriendRequest
-import com.google.firebase.auth.FirebaseAuth
+import com.example.eventconnect.models.FriendSimple
+import com.example.eventconnect.models.UserSimple
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
@@ -16,16 +15,13 @@ class FriendsViewModel(
     private val currentUserId: String,
     private val currentUserEmail: String
 ) : ViewModel() {
-    private val _friends = MutableStateFlow<List<Friend>>(emptyList())
+    private val _friends = MutableStateFlow<List<FriendSimple>>(emptyList())
     val friends = _friends.asStateFlow()
 
-    private val _filteredFriends = MutableStateFlow<List<Friend>>(emptyList())
-    val filteredFriends = _filteredFriends.asStateFlow()
-
-    private val _searchResults = MutableStateFlow<List<User>>(emptyList())
+    private val _searchResults = MutableStateFlow<List<UserSimple>>(emptyList())
     val searchResults = _searchResults.asStateFlow()
 
-    private val _allUsers = MutableStateFlow<List<User>>(emptyList())
+    private val _allUsers = MutableStateFlow<List<UserSimple>>(emptyList())
     val allUsers = _allUsers.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
@@ -35,7 +31,6 @@ class FriendsViewModel(
     val error = _error.asStateFlow()
 
     private val _friendRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
-    val friendRequests = _friendRequests.asStateFlow()
 
     init {
         fetchFriends()
@@ -48,9 +43,8 @@ class FriendsViewModel(
             .get()
             .addOnSuccessListener { documents ->
                 val users = documents.mapNotNull { doc ->
-                    doc.toObject<User>().copy(uid = doc.id)
+                    doc.toObject<UserSimple>().copy(uid = doc.id)
                 }.filter { user ->
-                    // Filter out the current user from the list
                     user.uid != currentUserId
                 }
                 _allUsers.value = users
@@ -79,74 +73,18 @@ class FriendsViewModel(
             }
     }
 
-    fun acceptRequest(request: FriendRequest) {
-        val senderFriends = db.collection("users").document(request.senderId).collection("friends")
-        val receiverFriends = db.collection("users").document(currentUserId).collection("friends")
-
-        senderFriends.document(currentUserId).set(
-            mapOf(
-                "userId" to currentUserId,
-                "name" to FirebaseAuth.getInstance().currentUser?.displayName,
-                "email" to FirebaseAuth.getInstance().currentUser?.email
-            )
-        )
-
-        receiverFriends.document(request.senderId).set(
-            mapOf(
-                "userId" to request.senderId,
-                "name" to request.senderEmail,  // We should improve this to get the actual name
-                "email" to request.senderEmail
-            )
-        )
-
-        db.collection("friendRequests").document(request.senderId + "_" + currentUserId)
-            .update("status", "accepted")
-            .addOnSuccessListener {
-                fetchFriends()
-                fetchFriendRequests()
-            }
-            .addOnFailureListener { e ->
-                _error.value = "Failed to accept request: ${e.message}"
-            }
-    }
-
-    fun declineRequest(request: FriendRequest) {
-        db.collection("friendRequests").document(request.senderId + "_" + currentUserId)
-            .update("status", "declined")
-            .addOnSuccessListener {
-                fetchFriendRequests()
-            }
-            .addOnFailureListener { e ->
-                _error.value = "Failed to decline: ${e.message}"
-            }
-    }
-
     fun fetchFriends() {
         _isLoading.value = true
         db.collection("users").document(currentUserId).collection("friends")
             .get()
             .addOnSuccessListener { documents ->
-                _friends.value = documents.mapNotNull { it.toObject<Friend>() }
+                _friends.value = documents.mapNotNull { it.toObject<FriendSimple>() }
                 _isLoading.value = false
             }
             .addOnFailureListener { e ->
                 _error.value = "Failed to load friends: ${e.message}"
                 _isLoading.value = false
             }
-    }
-
-    fun searchFriends(query: String) {
-        if (query.isBlank()) {
-            _filteredFriends.value = _friends.value // Show all if query is empty
-            return
-        }
-
-        val lowercaseQuery = query.lowercase()
-
-        _filteredFriends.value = _friends.value.filter { friend ->
-            friend.name.lowercase().contains(lowercaseQuery) ||
-                    friend.email.lowercase().contains(lowercaseQuery)
-        }
     }
 
     fun searchUsers(query: String) {
@@ -157,15 +95,13 @@ class FriendsViewModel(
 
         _isLoading.value = true
 
-        // Case insensitive search - start with lowercase query
         val lowercaseQuery = query.lowercase()
 
         db.collection("users")
             .get()
             .addOnSuccessListener { documents ->
                 val users = documents.mapNotNull { doc ->
-                    val user = doc.toObject<User>().copy(uid = doc.id)
-                    // Check if name or email contains query (case insensitive)
+                    val user = doc.toObject<UserSimple>().copy(uid = doc.id)
                     if ((user.displayName.lowercase().contains(lowercaseQuery) ||
                                 user.email.lowercase().contains(lowercaseQuery)) &&
                         user.uid != currentUserId) {
@@ -189,7 +125,6 @@ class FriendsViewModel(
             return
         }
 
-        // First check if we already have a pending request to this user
         db.collection("friendRequests")
             .whereEqualTo("senderEmail", currentUserEmail)
             .whereEqualTo("receiverEmail", receiverEmail)
@@ -201,7 +136,6 @@ class FriendsViewModel(
                     return@addOnSuccessListener
                 }
 
-                // Find the user ID for the receiver email
                 db.collection("users")
                     .whereEqualTo("email", receiverEmail)
                     .get()
@@ -222,7 +156,6 @@ class FriendsViewModel(
                             "timestamp" to FieldValue.serverTimestamp()
                         )
 
-                        // Use a composite document ID to ensure uniqueness
                         val requestId = currentUserId + "_" + receiverId
 
                         db.collection("friendRequests").document(requestId)
@@ -252,7 +185,6 @@ class FriendsViewModel(
             "photoUrl" to ""
         )
 
-        // First check if user with this email already exists
         db.collection("users")
             .whereEqualTo("email", email)
             .get()
@@ -288,11 +220,6 @@ class FriendsViewModel(
                     return@addOnSuccessListener
                 }
 
-                val userDoc = documents.first()
-                val user = userDoc.toObject(User::class.java)
-                val userId = userDoc.id
-
-                // Check if this person is already your friend
                 db.collection("users").document(currentUserId).collection("friends")
                     .whereEqualTo("email", email)
                     .get()
@@ -302,7 +229,6 @@ class FriendsViewModel(
                             return@addOnSuccessListener
                         }
 
-                        // Send friend request
                         sendFriendRequest(email)
                     }
             }
@@ -321,7 +247,6 @@ class FriendsViewModel(
             return
         }
 
-        // First check if the user is already a friend
         db.collection("users").document(currentUserId).collection("friends")
             .whereEqualTo("email", email)
             .get()
@@ -331,7 +256,6 @@ class FriendsViewModel(
                     return@addOnSuccessListener
                 }
 
-                // Check if the user with the given email exists
                 db.collection("users")
                     .whereEqualTo("email", email)
                     .get()
@@ -341,9 +265,8 @@ class FriendsViewModel(
                             return@addOnSuccessListener
                         }
 
-                        val user = userDocs.first().toObject<User>()
+                        val user = userDocs.first().toObject<UserSimple>()
 
-                        // Add the user to current user's friends collection
                         db.collection("users").document(currentUserId).collection("friends")
                             .document(userId)
                             .set(mapOf(
@@ -413,16 +336,3 @@ class FriendsViewModel(
             }
     }
 }
-
-data class User(
-    val uid: String = "",
-    val displayName: String = "",
-    val email: String = "",
-    val photoUrl: String = ""
-)
-
-data class Friend(
-    val userId: String = "",
-    val name: String = "",
-    val email: String = ""
-)

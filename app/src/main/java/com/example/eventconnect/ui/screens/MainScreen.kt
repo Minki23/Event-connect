@@ -1,32 +1,35 @@
 package com.example.eventconnect.ui.screens
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.eventconnect.ui.components.BottomNavBar
 import com.example.eventconnect.ui.components.BottomNavItem
 import com.example.eventconnect.ui.components.SearchTopAppBar
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.*
-import com.example.eventconnect.ui.theme.EventConnectTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(onGoogleLogin: () -> Unit) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -69,7 +72,7 @@ fun MainScreen() {
                         "Invitations" },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 )
@@ -78,10 +81,13 @@ fun MainScreen() {
                     title = { Text("Edit Event") },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                         }
                     }
                 )
+
+                "login" -> null
+
                 else -> SearchTopAppBar(
                     title = "",
                     onProfileClick = {
@@ -89,12 +95,16 @@ fun MainScreen() {
                     }
                 )
             }
+
         },
         bottomBar = {
-            BottomNavBar(
-                navController = navController,
-                items = bottomNavItems
-            )
+            when (currentRoute) {
+                "login" -> null
+                else -> BottomNavBar(
+                    navController = navController,
+                    items = bottomNavItems
+                )
+            }
         }
     ) { innerPadding ->
         NavHost(
@@ -113,20 +123,21 @@ fun MainScreen() {
                 EditEventScreen(navController = navController, eventId = eventId)
             }
             composable("add_event") {
-                AddEventScreen()
+                AddEventScreen(onCreate = {navController.popBackStack()})
             }
             composable("profile") {
                 UserScreen(onLogout = {navController.navigate("login")})
             }
             composable("friends"){
-                FriendsScreen(navigateToInvitations = {
-                    navController.navigate("invitations")
-                })
+                FriendsScreen()
             }
             composable("invitations"){
                 InvitationsScreen(onBack = {
                     navController.popBackStack()
                 })
+            }
+            composable("login") {
+                LoginScreen(onLoginClick = {onGoogleLogin()})
             }
         }
     }

@@ -4,24 +4,29 @@ import android.app.DatePickerDialog
 import android.app.DownloadManager
 import android.app.TimePickerDialog
 import android.net.Uri
-import android.util.Log
-import android.widget.Toast
 import android.view.ContextThemeWrapper
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -29,8 +34,26 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,14 +61,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.eventconnect.R
 import com.example.eventconnect.ui.data.EventViewModel
-import com.example.eventconnect.ui.data.Friend
 import com.example.eventconnect.ui.data.SimpleUser
-import com.example.eventconnect.ui.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import java.util.Calendar
@@ -69,7 +91,6 @@ fun EditEventScreen(
 
     val selectedParticipants = remember { mutableStateListOf<SimpleUser>() }
 
-    // Form state
     var name by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -78,16 +99,10 @@ fun EditEventScreen(
     var currentImageUrl by remember { mutableStateOf("") }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
     val friends by viewModel.friends.collectAsState()
-    val participants by viewModel.eventParticipants.collectAsState()
-    val combinedUsers = remember(friends, participants) {
-        (friends + participants)
-            .distinctBy { it.userId }
-    }
     val calendar = remember { Calendar.getInstance() }
     val loading = remember { mutableStateOf(false) }
     val isUploadingPhoto = remember { mutableStateOf(false) }
 
-    // ViewModel state
     val event by viewModel.currentEvent
     val isLoading by viewModel.isLoadingEvent
     val isSaving by viewModel.isSaving
@@ -114,10 +129,8 @@ fun EditEventScreen(
     }
 
 
-    // Load event once on enter
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
-    // Populate form when event loads
     LaunchedEffect(event) {
         event?.let {
             name = it.name
@@ -127,7 +140,6 @@ fun EditEventScreen(
             time = it.time
             currentImageUrl = it.imageUrl
 
-            // Add existing participants from event (avoid duplicates)
             selectedParticipants.clear()
             val eventUsers = it.participants.map { simple ->
                 SimpleUser(
@@ -186,7 +198,6 @@ fun EditEventScreen(
                 CircularProgressIndicator()
             }
         } else {
-            // Używamy LazyColumn jako głównego kontenera z przewijaniem
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -195,7 +206,6 @@ fun EditEventScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                // Event Image
                 item {
                     Box(
                         modifier = Modifier
@@ -229,7 +239,6 @@ fun EditEventScreen(
                     }
                 }
 
-                // Input fields
                 if (isHost) {
                     item {
                         OutlinedTextField(
@@ -339,20 +348,18 @@ fun EditEventScreen(
                     }
                 }
 
-                // Event Photos section
                 item {
                     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
                         if (uris.isNotEmpty()) {
                             isUploadingPhoto.value = true
-                            loading.value = true  // Show a loading indicator during upload
+                            loading.value = true
                             uris.forEach { uri ->
                                 viewModel.uploadPhotoForEvent(eventId, uri, context) {
-                                    // Update UI after the photo upload is done
                                     Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
                                 }
                             }
-                            loading.value = false  // Hide loading indicator after upload
-                            isUploadingPhoto.value = false  // Reset the flag once upload is done
+                            loading.value = false
+                            isUploadingPhoto.value = false
                         }
                     }
 
@@ -369,7 +376,6 @@ fun EditEventScreen(
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Existing photos
                             event?.photoUrls?.forEachIndexed { index, photoUrl ->
                                 AsyncImage(
                                     model = photoUrl,
@@ -386,7 +392,6 @@ fun EditEventScreen(
                                 )
                             }
 
-                            // Add button
                             Box(
                                 modifier = Modifier
                                     .size(100.dp)
@@ -482,7 +487,6 @@ fun EditEventScreen(
                 )
             }
 
-            // Close Button
             IconButton(
                 onClick = { isPhotoViewerOpen = false },
                 modifier = Modifier
@@ -496,7 +500,6 @@ fun EditEventScreen(
                 )
             }
 
-            // Download Button
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -505,7 +508,7 @@ fun EditEventScreen(
                 IconButton(
                     onClick = {
                         val url = photoUrls[pagerState.currentPage]
-                        val request = DownloadManager.Request(Uri.parse(url)).apply {
+                        val request = DownloadManager.Request(url.toUri()).apply {
                             setTitle("Downloading image")
                             setDescription("Saving image from EventConnect")
                             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -525,7 +528,7 @@ fun EditEventScreen(
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Download, // Replace with download icon if you have
+                        imageVector = Icons.Default.Download,
                         contentDescription = "Download",
                         tint = Color.White
                     )

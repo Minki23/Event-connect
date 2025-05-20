@@ -12,18 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.eventconnect.models.FriendSimple
+import com.example.eventconnect.models.UserSimple
 import com.example.eventconnect.ui.data.FriendsViewModel
-import com.example.eventconnect.ui.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
-/**
- * Screen for finding and sending friend invitations to users (Users only, no tabs)
- * @param onBack lambda to pop back
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvitationsScreen(onBack: () -> Unit) {
@@ -40,13 +36,11 @@ fun InvitationsScreen(onBack: () -> Unit) {
 
     var searchQuery by remember { mutableStateOf("") }
 
-    // Fetch all users and friend requests when the screen is first shown
     LaunchedEffect(Unit) {
         viewModel.fetchAllUsers()
         viewModel.fetchFriends()
     }
 
-    // Perform search when the query changes
     LaunchedEffect(searchQuery) {
         if (searchQuery.isNotEmpty()) {
             viewModel.searchUsers(searchQuery)
@@ -91,21 +85,18 @@ private fun UsersTab(
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     viewModel: FriendsViewModel,
-    searchResults: List<User>,
-    allUsers: List<User>,
-    friends: List<com.example.eventconnect.ui.data.Friend>,
+    searchResults: List<UserSimple>,
+    allUsers: List<UserSimple>,
+    friends: List<FriendSimple>,
     isLoading: Boolean,
     error: String,
     modifier: Modifier = Modifier
 ) {
-    val currentUser = Firebase.auth.currentUser
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Search box
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchChange,
@@ -121,7 +112,6 @@ private fun UsersTab(
             )
         )
 
-        // Display error message if any
         if (error.isNotEmpty() && !error.contains("success")) {
             Text(
                 text = error,
@@ -156,7 +146,7 @@ private fun UsersTab(
 
                 val usersToDisplay = if (searchQuery.isEmpty()) allUsers else searchResults
 
-                if (usersToDisplay.isEmpty() && !isLoading) {
+                if (usersToDisplay.isEmpty()) {
                     Text(
                         "No users found",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -183,125 +173,8 @@ private fun UsersTab(
 }
 
 @Composable
-private fun InvitationsTab(
-    viewModel: FriendsViewModel,
-    friendRequests: List<com.example.eventconnect.models.FriendRequest>,
-    isLoading: Boolean,
-    error: String
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Error message
-        if (error.isNotEmpty()) {
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
-        // Title
-        Text(
-            text = "Friend Requests",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        when {
-            isLoading -> LoadingIndicator()
-            friendRequests.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "No pending friend requests",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(friendRequests) { request ->
-                        RequestCard(
-                            senderEmail = request.senderEmail,
-                            onAccept = { viewModel.acceptRequest(request) },
-                            onDecline = { viewModel.declineRequest(request) }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RequestCard(
-    senderEmail: String,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = senderEmail,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onAccept,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Accept")
-                }
-
-                OutlinedButton(
-                    onClick = onDecline,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Decline")
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun UserCard(
-    user: User,
+    user: UserSimple,
     alreadyFriend: Boolean,
     onSendRequest: () -> Unit
 ) {
@@ -367,14 +240,4 @@ private fun LoadingIndicator() {
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
-}
-
-@Composable
-private fun ErrorMessage(error: String) {
-    Text(
-        text = error,
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(16.dp)
-    )
 }
