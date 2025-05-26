@@ -1,5 +1,6 @@
 package com.example.eventconnect.ui.screens
 
+import EventViewModelFactory
 import com.example.eventconnect.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -56,6 +57,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.EventViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import java.util.Calendar
 
 @Composable
@@ -66,7 +71,13 @@ fun AddEventScreen(
     val user = FirebaseAuth.getInstance().currentUser
     val context = LocalContext.current
 
-    val viewModel: EventViewModel = viewModel()
+    val auth = Firebase.auth
+    val db = FirebaseFirestore.getInstance()
+    val storage = FirebaseStorage.getInstance()
+
+    val viewModel: EventViewModel = viewModel(
+        factory = EventViewModelFactory(auth, db, storage)
+    )
 
     var eventName by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }

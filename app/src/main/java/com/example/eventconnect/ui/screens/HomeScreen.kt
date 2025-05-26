@@ -1,5 +1,6 @@
 package com.example.eventconnect.ui.screens
 
+import EventViewModelFactory
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,13 +28,24 @@ import coil.compose.AsyncImage
 import com.example.eventconnect.ui.data.Event
 import com.example.eventconnect.ui.data.EventFilter
 import com.example.eventconnect.ui.data.EventViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
-    viewModel: EventViewModel = viewModel()
+    navController: NavController
 ) {
+    val auth = Firebase.auth
+    val db = FirebaseFirestore.getInstance()
+    val storage = FirebaseStorage.getInstance()
+
+    val viewModel: EventViewModel = viewModel(
+        factory = EventViewModelFactory(auth, db, storage)
+    )
+
     val events by viewModel.events
     val isLoading by viewModel.isLoadingEvents
     val selectedFilter by viewModel.selectedFilter

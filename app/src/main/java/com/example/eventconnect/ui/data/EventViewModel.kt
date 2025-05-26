@@ -23,11 +23,10 @@ import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.util.UUID
 
-class EventViewModel : ViewModel() {
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
-
+class EventViewModel(private val auth: FirebaseAuth,
+                     private val db: FirebaseFirestore,
+                     private val storage: FirebaseStorage
+) : ViewModel() {
     val currentUserUid: String
         get() = auth.currentUser?.uid.orEmpty()
     val currentUser = auth.currentUser

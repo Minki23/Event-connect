@@ -1,5 +1,6 @@
 package com.example.eventconnect.ui.screens
 
+import EventViewModelFactory
 import android.app.DatePickerDialog
 import android.app.DownloadManager
 import android.app.TimePickerDialog
@@ -69,16 +70,25 @@ import com.example.eventconnect.R
 import com.example.eventconnect.ui.data.EventViewModel
 import com.example.eventconnect.ui.data.SimpleUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEventScreen(
     navController: NavController,
-    eventId: String,
-    viewModel: EventViewModel = viewModel()
+    eventId: String
 ) {
+    val auth = Firebase.auth
+    val db = FirebaseFirestore.getInstance()
+    val storage = FirebaseStorage.getInstance()
+
+    val viewModel: EventViewModel = viewModel(
+        factory = EventViewModelFactory(auth, db, storage)
+    )
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
