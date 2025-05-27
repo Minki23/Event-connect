@@ -322,6 +322,10 @@ class EventViewModel(private val auth: FirebaseAuth,
     }
 
     fun loadUserFriends(currentUserId: String) {
+        if (currentUserId.isBlank()) {
+            Log.d("EventViewModel", "Skipping loadUserFriends: empty userId (likely running in test)")
+            return
+        }
         db.collection("users")
             .document(currentUserId)
             .collection("friends")

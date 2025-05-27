@@ -82,4 +82,8 @@ dependencies {
 // Firebase test stubs (do mockowania interfejsów)
     testImplementation("com.google.firebase:firebase-auth")
     testImplementation("com.google.firebase:firebase-firestore")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
+    androidTestImplementation("org.mockito:mockito-android:5.11.0")
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:<version>")
 }
