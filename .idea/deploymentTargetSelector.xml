@@ -13,9 +13,6 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="MainScreenTabTest">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="bottomTabs_navigateToCorrectScreens()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>

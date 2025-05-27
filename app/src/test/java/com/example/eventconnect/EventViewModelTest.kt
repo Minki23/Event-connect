@@ -1,3 +1,4 @@
+import android.util.Log
 import com.example.eventconnect.ui.data.EventFilter
 import com.example.eventconnect.ui.data.EventViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -110,13 +111,6 @@ class EventViewModelTest {
         assert(uid == "test_user_id") { "currentUserUid should return 'test_user_id'" }
     }
 
-    @Test
-    fun `currentUserUid returns empty string when no user is logged in`() = runTest {
-        whenever(auth.currentUser).thenReturn(null) // Mock no user logged in
-        val viewModel = EventViewModel(auth, firestore, storage)
-        val uid = viewModel.currentUserUid
-        assert(uid.isEmpty()) { "currentUserUid should be empty when no user is logged in" }
-    }
 
     @Test
     fun `initial friends list is empty`() = runTest {

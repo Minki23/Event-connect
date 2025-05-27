@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("app.cash.paparazzi") version "1.3.4"
 }
 
 android {
@@ -92,4 +93,5 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     testImplementation(kotlin("test"))
+    testImplementation("app.cash.paparazzi:paparazzi:1.3.4")
 }
