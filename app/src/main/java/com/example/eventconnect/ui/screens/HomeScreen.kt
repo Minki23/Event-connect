@@ -194,7 +194,8 @@ fun EventItem(
     Card(
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .testTag("event_item_${event.name}"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),

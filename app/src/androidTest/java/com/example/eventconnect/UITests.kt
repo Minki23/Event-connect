@@ -15,16 +15,16 @@ import androidx.test.platform.app.InstrumentationRegistry
 import android.util.Log
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.isDisplayed
-import androidx.compose.ui.test.isEnabled // Added import for isEnabled matcher
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.example.eventconnect.MainActivity
 import org.junit.After // Added import
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.math.log
 
 @RunWith(AndroidJUnit4::class)
 class UITests {
@@ -43,7 +43,6 @@ class UITests {
 
             composeTestRule.onNodeWithTag("profile_button").performClick()
             composeTestRule.onNodeWithText("Log Out").performClick()
-            // Wait for logout to process and login screen to appear
             try {
                 composeTestRule.waitUntil(timeoutMillis = 5000L) {
                     composeTestRule.onAllNodesWithText("Login with google").fetchSemanticsNodes().isNotEmpty()
@@ -52,7 +51,6 @@ class UITests {
             } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
                 Log.e("UI_TEST", "Timeout waiting for login screen after logout in attemptLogout. 'Login with google' not found.")
                 composeTestRule.onRoot().printToLog("HIERARCHY_AFTER_LOGOUT_TIMEOUT_IN_ATTEMPT_LOGOUT")
-                // Not re-throwing here as this is a cleanup/setup method, failure might be acceptable
             }
         }.onFailure {
             Log.d("UI_TEST", "Attempted logout in attemptLogout: User might already be logged out or not on a screen with logout controls. Details: ${it.message}")
@@ -81,9 +79,9 @@ class UITests {
             throw AssertionError("Account element '${accountSelector}' not found even after wait.")
         }
 
-        // Wait for the main screen (e.g., "Events" title) to appear after login
+
         try {
-            composeTestRule.waitUntil(timeoutMillis = 10000L) { // Increased timeout for post-login screen load
+            composeTestRule.waitUntil(timeoutMillis = 10000L) {
                 composeTestRule.onAllNodesWithText("Events").fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
@@ -97,9 +95,7 @@ class UITests {
 
     @Test
     fun loginAndCreateEvent_eventAppearsInList() {
-        clickLoginButton_showsLoginScreen() // Assumes this lands on a screen where "Events" is visible
-
-        // Wait for the "Add Event" button/text to be available
+        clickLoginButton_showsLoginScreen()
         try {
             composeTestRule.waitUntil(timeoutMillis = 5000L) {
                 composeTestRule.onAllNodesWithText("Add Event").fetchSemanticsNodes().isNotEmpty()
@@ -120,27 +116,23 @@ class UITests {
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val device = UiDevice.getInstance(instrumentation)
-        val dialogInteractionTimeout = 5000L // Timeout for dialog interactions
+        val dialogInteractionTimeout = 5000L
 
-        // --- Date Picker ---
         composeTestRule.onNodeWithTag("date_picker").performClick()
         if (!device.wait(Until.hasObject(By.text("OK")), dialogInteractionTimeout)) {
             Log.e("UI_TEST", "Timeout waiting for Date Picker 'OK' button.")
             composeTestRule.onRoot().printToLog("HIERARCHY_DATE_PICKER_OK_TIMEOUT")
             throw AssertionError("Date Picker 'OK' button not found or timed out.")
         }
-        val datePickerOkButton = device.findObject(By.text("OK")) // Re-find after wait
+        val datePickerOkButton = device.findObject(By.text("OK"))
         if (datePickerOkButton != null) {
             datePickerOkButton.click()
         } else {
-            // Fallback or more specific selector if "OK" by text isn't found
             val alternativeDatePickerOkButton = device.findObject(By.res("android:id/button1"))
             alternativeDatePickerOkButton?.click() ?: throw AssertionError("Date picker 'OK' button (alternative) not found. Inspect with uiautomatorviewer.")
         }
-        // Wait for the dialog to disappear by checking for an element on the underlying screen
         try {
             composeTestRule.waitUntil(timeoutMillis = dialogInteractionTimeout) {
-                // Assuming "time_picker" tag is on the screen behind the dialog
                 composeTestRule
                     .onAllNodesWithTag("time_picker")
                     .filter(androidx.compose.ui.test.isEnabled())
@@ -152,24 +144,21 @@ class UITests {
             throw e
         }
 
-        // --- Time Picker ---
         composeTestRule.onNodeWithTag("time_picker").performClick()
         if (!device.wait(Until.hasObject(By.text("OK")), dialogInteractionTimeout)) {
             Log.e("UI_TEST", "Timeout waiting for Time Picker 'OK' button.")
             composeTestRule.onRoot().printToLog("HIERARCHY_TIME_PICKER_OK_TIMEOUT")
             throw AssertionError("Time Picker 'OK' button not found or timed out.")
         }
-        val timePickerOkButton = device.findObject(By.text("OK")) // Re-find after wait
+        val timePickerOkButton = device.findObject(By.text("OK"))
         if (timePickerOkButton != null) {
             timePickerOkButton.click()
         } else {
             val alternativeTimePickerOkButton = device.findObject(By.res("android:id/button1"))
             alternativeTimePickerOkButton?.click() ?: throw AssertionError("Time picker 'OK' button (alternative) not found. Inspect with uiautomatorviewer.")
         }
-        // Wait for the dialog to disappear by checking for an element on the underlying screen
         try {
             composeTestRule.waitUntil(timeoutMillis = dialogInteractionTimeout) {
-                // Assuming "save_event_button" tag is on the screen behind the dialog
                 composeTestRule
                     .onAllNodesWithTag("save_event_button")
                     .filter(androidx.compose.ui.test.isEnabled())
@@ -184,7 +173,7 @@ class UITests {
         composeTestRule.onNodeWithTag("save_event_button").performClick()
 
         try {
-            composeTestRule.waitUntil(timeoutMillis = 10000L) { // Increased timeout for event saving and list update
+            composeTestRule.waitUntil(timeoutMillis = 10000L) {
                 composeTestRule.onAllNodesWithText(eventName).fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
@@ -193,6 +182,15 @@ class UITests {
             throw e
         }
         composeTestRule.onNodeWithText(eventName).assertIsDisplayed()
+    }
+
+    fun scrollUntilVisible(name: String, maxTries: Int = 10) {
+        repeat(maxTries) {
+            if (composeTestRule.onNodeWithTag("event_item_${name}").isDisplayed()) return
+            composeTestRule.onNodeWithTag("event_list").performTouchInput { swipeUp() }
+            composeTestRule.waitForIdle()
+        }
+        throw AssertionError("Item with text '$name' not found after $maxTries scrolls.")
     }
 
     @Test
@@ -292,12 +290,9 @@ class UITests {
         composeTestRule.waitUntil(timeoutMillis = 10000L) {
             composeTestRule.onAllNodesWithText("Host").fetchSemanticsNodes().isNotEmpty()
         }
-
-        composeTestRule.waitUntil(timeoutMillis = 100000L) {
-            composeTestRule.onNodeWithText(eventName).isDisplayed()
-        }
+        scrollUntilVisible(eventName)
         composeTestRule.onNodeWithText(eventName).performClick()
-        composeTestRule.waitUntil(timeoutMillis = 100000L) {
+        composeTestRule.waitUntil(timeoutMillis = 10000L) {
             composeTestRule.onNodeWithTag("event_name_field").isDisplayed()
         }
         composeTestRule.onNodeWithTag("event_name_field").performTextClearance()
@@ -330,7 +325,6 @@ class UITests {
             composeTestRule.onRoot().printToLog("HIERARCHY_EDIT_TEST_VERIFY_EDIT_TIMEOUT")
             throw e
         }
-
         composeTestRule.onNodeWithText(editedEventName).performClick()
         try {
             composeTestRule.waitUntil(timeoutMillis = 10000L) {
