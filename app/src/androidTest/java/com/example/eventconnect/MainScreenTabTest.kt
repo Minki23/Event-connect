@@ -30,7 +30,6 @@ class MainScreenTabTest {
 
     @Test
     fun bottomTabs_navigateToCorrectScreens() {
-        // Create mock Firestore and related objects
         val mockFirestore = mock(FirebaseFirestore::class.java)
         val mockCollection = mock(CollectionReference::class.java)
         val mockDocument = mock(DocumentReference::class.java)
@@ -40,56 +39,45 @@ class MainScreenTabTest {
         val mockTask: Task<QuerySnapshot> = Tasks.forResult(mockQuerySnapshot)
         val mockDocTask: Task<DocumentSnapshot> = Tasks.forResult(mockDocumentSnapshot)
 
-        // Mock QuerySnapshot with proper empty collections - THIS IS THE KEY FIX
         `when`(mockQuerySnapshot.isEmpty).thenReturn(true)
         `when`(mockQuerySnapshot.documents).thenReturn(emptyList())
         `when`(mockQuerySnapshot.iterator()).thenReturn(emptyList<QueryDocumentSnapshot>().toMutableList().iterator())
         `when`(mockQuerySnapshot.size()).thenReturn(0)
 
-        // Mock DocumentSnapshot
         `when`(mockDocumentSnapshot.exists()).thenReturn(false)
         `when`(mockDocumentSnapshot.data).thenReturn(emptyMap<String, Any>())
 
-        // Mock Firestore collection calls
         `when`(mockFirestore.collection(any())).thenReturn(mockCollection)
         `when`(mockFirestore.document(any())).thenReturn(mockDocument)
 
-        // Mock collection methods
         `when`(mockCollection.whereEqualTo(any<String>(), any())).thenReturn(mockQuery)
         `when`(mockCollection.orderBy(any<String>())).thenReturn(mockQuery)
         `when`(mockCollection.limit(any())).thenReturn(mockQuery)
         `when`(mockCollection.get()).thenReturn(mockTask)
         `when`(mockCollection.document(any())).thenReturn(mockDocument)
 
-        // Mock document methods
         `when`(mockDocument.collection(any())).thenReturn(mockCollection)
         `when`(mockDocument.get()).thenReturn(mockDocTask)
 
-        // Mock query methods (for method chaining)
         `when`(mockQuery.whereEqualTo(any<String>(), any())).thenReturn(mockQuery)
         `when`(mockQuery.orderBy(any<String>())).thenReturn(mockQuery)
         `when`(mockQuery.limit(any())).thenReturn(mockQuery)
         `when`(mockQuery.get()).thenReturn(mockTask)
 
-        // Launch the MainScreen composable with mock Firestore
         composeTestRule.setContent {
             CompositionLocalProvider(LocalFirestore provides mockFirestore) {
                 MainScreen(onGoogleLogin = {})
             }
         }
 
-        // Wait for composition to settle
         composeTestRule.waitForIdle()
 
-        // 🏠 HOME tab should be selected by default
         composeTestRule.onNodeWithText("Home").assertIsDisplayed()
 
-        // ➕ Tap "Add Event" tab
         composeTestRule.onNodeWithContentDescription("Add Event", useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Create Event").assertIsDisplayed()
 
-        // 👥 Tap "Friends" tab
         composeTestRule.onNodeWithContentDescription("Friends", useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Friends")[0].assertIsDisplayed()
