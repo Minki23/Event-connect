@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -66,7 +67,9 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.fetchEvents()
     }
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+    ) {
         FilterTabs(
             selectedFilter = selectedFilter,
             onFilterSelected = { viewModel.setFilter(it) }
@@ -100,7 +103,9 @@ fun HomeScreen(
             }
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("event_list"),
                     contentPadding = PaddingValues(8.dp),
                 ) {
                     items(events) { event ->
