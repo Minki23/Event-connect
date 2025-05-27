@@ -38,14 +38,20 @@ android {
     buildFeatures {
         compose = true
     }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14" // Or the version compatible with Kotlin 2.0.21 and Compose BOM 2024.09.00
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
     implementation ("com.google.android.material:material:1.9.0")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.compose.material:material:1.5.0")
+    implementation("androidx.compose.material3:material3:1.2.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.0")
-    implementation("androidx.compose.material3:material3:1.1.2")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
     implementation("com.google.firebase:firebase-firestore")
@@ -56,9 +62,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
-    implementation(libs.androidx.activity.compose)
+    implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
+    implementation("androidx.compose.ui:ui:1.6.1")
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
@@ -67,7 +73,7 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.storage.ktx)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
@@ -79,11 +85,11 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.11.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 
-// Firebase test stubs (do mockowania interfejsów)
     testImplementation("com.google.firebase:firebase-auth")
     testImplementation("com.google.firebase:firebase-firestore")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:<version>")
     androidTestImplementation("org.mockito:mockito-android:5.11.0")
     androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:<version>")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    testImplementation(kotlin("test"))
 }

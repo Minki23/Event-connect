@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -276,7 +277,8 @@ fun AddEventScreen(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag("date_picker")
                 ) { Text(selectedDate, color = Color.White) }
             }
             Spacer(Modifier.width(16.dp))
@@ -301,7 +303,8 @@ fun AddEventScreen(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag("time_picker")
                 ) { Text(
                     selectedTime,
                     color = Color.White
@@ -373,6 +376,7 @@ fun AddEventScreen(
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.size(width = 120.dp, height = 48.dp)
+                    .testTag("save_event_button")
             ) {
                 Text("Add Event", color = Color.White)
             }

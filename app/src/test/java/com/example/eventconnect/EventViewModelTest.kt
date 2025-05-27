@@ -21,9 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.mockito.ArgumentMatchers.anyString
-import com.example.eventconnect.ui.data.Event
-import com.example.eventconnect.ui.data.SimpleUser
-import org.mockito.Mockito.verify
 import com.google.firebase.firestore.Query
 
 
@@ -39,14 +36,13 @@ class EventViewModelTest {
     private lateinit var queryTask: Task<QuerySnapshot>
     private lateinit var documentTask: Task<DocumentSnapshot>
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var mockQuery: Query // Added mock for Query
+    private lateinit var mockQuery: Query
 
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        // Create mocks
         firestore = mock()
         auth = mock()
         firebaseUser = mock()

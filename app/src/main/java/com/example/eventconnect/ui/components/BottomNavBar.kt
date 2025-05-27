@@ -7,10 +7,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
+import java.util.Locale
 
 @Composable
 fun BottomNavBar(
@@ -50,7 +53,8 @@ fun BottomNavBar(
                         contentDescription = item.label
                     )
                 },
-                label = { Text(item.label) }
+                label = { Text(item.label) },
+                modifier = Modifier.testTag("bottom_nav_${item.route}")
             )
         }
     }
