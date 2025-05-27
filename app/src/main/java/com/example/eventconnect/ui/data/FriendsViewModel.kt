@@ -90,6 +90,7 @@ class FriendsViewModel(
     fun searchUsers(query: String) {
         if (query.isEmpty()) {
             _searchResults.value = emptyList()
+            _isLoading.value = false // Ensure isLoading is false for an empty query
             return
         }
 

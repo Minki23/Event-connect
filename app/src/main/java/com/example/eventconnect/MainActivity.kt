@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
         db = FirebaseFirestore.getInstance()
         auth = Firebase.auth
         credentialManager = CredentialManager.create(baseContext)
-
+        FirebaseApp.initializeApp(this)
         enableEdgeToEdge()
         setContent {
             CompositionLocalProvider(
@@ -70,7 +70,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        FirebaseApp.initializeApp(this)
     }
 
     fun launchCredentialManager() {

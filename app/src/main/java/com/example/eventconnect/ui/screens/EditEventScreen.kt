@@ -61,14 +61,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.eventconnect.R
+import com.example.eventconnect.models.UserSimple
 import com.example.eventconnect.ui.data.EventViewModel
-import com.example.eventconnect.ui.data.SimpleUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
@@ -92,14 +93,14 @@ fun EditEventScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val currentUser = SimpleUser(
-        userId = viewModel.currentUser?.uid ?: "",
-        name = viewModel.currentUser?.displayName ?: "",
+    val currentUser = UserSimple(
+        uid = viewModel.currentUser?.uid ?: "",
+        displayName = viewModel.currentUser?.displayName ?: "",
         email = viewModel.currentUser?.email ?: "",
         photoUrl = viewModel.currentUser?.photoUrl.toString()
     )
 
-    val selectedParticipants = remember { mutableStateListOf<SimpleUser>() }
+    val selectedParticipants = remember { mutableStateListOf<UserSimple>() }
 
     var name by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -117,7 +118,7 @@ fun EditEventScreen(
     val isLoading by viewModel.isLoadingEvent
     val isSaving by viewModel.isSaving
 
-    val isHost = event?.host == currentUser.userId
+    val isHost = event?.host == currentUser.uid
 
     var isPhotoViewerOpen by remember { mutableStateOf(false) }
     var selectedPhotoIndex by remember { mutableStateOf(0) }
@@ -132,9 +133,7 @@ fun EditEventScreen(
         newImageUri = uri
         if (uri != null) {
             loading.value = true
-            viewModel.uploadPhotoForEvent(eventId, uri, context) {
-                Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
-            }
+            viewModel.uploadPhotoForEvent(eventId, uri, context)
         }
     }
 
@@ -152,16 +151,16 @@ fun EditEventScreen(
 
             selectedParticipants.clear()
             val eventUsers = it.participants.map { simple ->
-                SimpleUser(
-                    userId = simple.userId.orEmpty(),
-                    name = simple.name.orEmpty(),
-                    email = simple.email.orEmpty(),
-                    photoUrl = simple.photoUrl.orEmpty()
+                UserSimple(
+                    uid = simple.uid,
+                    displayName = simple.displayName,
+                    email = simple.email,
+                    photoUrl = simple.photoUrl
                 )
             }
 
             selectedParticipants.addAll(eventUsers.filter { newUser ->
-                selectedParticipants.none { existing -> existing.userId == newUser.userId }
+                selectedParticipants.none { existing -> existing.uid == newUser.uid }
             })
 
         }
@@ -190,7 +189,8 @@ fun EditEventScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .testTag("save_edited_event"),
                     enabled = !isSaving && !viewModel.isUploadingPhoto.value && name.isNotBlank() && date.isNotBlank() && time.isNotBlank()
                 ) {
                     Text(
@@ -260,6 +260,7 @@ fun EditEventScreen(
                             label = { Text("Event Name") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
+                                .testTag("event_name_field")
                         )
                     }
 
@@ -319,6 +320,7 @@ fun EditEventScreen(
                             },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
+                                .testTag("location_field")
                         )
                     }
 
@@ -329,7 +331,8 @@ fun EditEventScreen(
                             label = { Text("Description") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(150.dp),
+                                .height(150.dp)
+                                .testTag("description_field"),
                             maxLines = 5
                         )
                     }
@@ -367,9 +370,7 @@ fun EditEventScreen(
                             isUploadingPhoto.value = true
                             loading.value = true
                             uris.forEach { uri ->
-                                viewModel.uploadPhotoForEvent(eventId, uri, context) {
-                                    Toast.makeText(context, "Photo uploaded", Toast.LENGTH_SHORT).show()
-                                }
+                                viewModel.uploadPhotoForEvent(eventId, uri, context)
                             }
                             loading.value = false
                             isUploadingPhoto.value = false
@@ -433,12 +434,12 @@ fun EditEventScreen(
                         selectedParticipants.forEach { participant ->
                             AssistChip(
                                 onClick = {
-                                    if (isHost && participant.userId != currentUser.userId) {
-                                        selectedParticipants.removeAll { it.userId == participant.userId }
+                                    if (isHost && participant.uid != currentUser.uid) {
+                                        selectedParticipants.removeAll { it.uid == participant.uid }
                                     }
                                 },
-                                enabled = isHost && participant.userId != currentUser.userId,
-                                label = { Text(participant.name.toString()) }
+                                enabled = isHost && participant.uid != currentUser.uid,
+                                label = { Text(participant.displayName.toString()) }
                             )
                         }
                     }
@@ -452,7 +453,7 @@ fun EditEventScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             friends
                                 .filter { friend ->
-                                    selectedParticipants.none { it.userId == friend.userId }
+                                    selectedParticipants.none { it.uid == friend.uid }
                                 }
                                 .forEach { friend ->
                                     FilterChip(
@@ -460,7 +461,7 @@ fun EditEventScreen(
                                         onClick = {
                                             selectedParticipants.add(friend)
                                         },
-                                        label = { Text(friend.name.toString()) }
+                                        label = { Text(friend.displayName.toString()) }
                                     )
                                 }
                         }

@@ -25,7 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
-import com.example.eventconnect.ui.data.Event
+import com.example.eventconnect.models.Event
 import com.example.eventconnect.ui.data.EventFilter
 import com.example.eventconnect.ui.data.EventViewModel
 import com.google.firebase.auth.ktx.auth
@@ -105,7 +105,7 @@ fun HomeScreen(
                 ) {
                     items(events) { event ->
                         val isUserEvent = event.host == currentUserUid
-                        val isParticipating = event.participants.any { it.userId == currentUserUid }
+                        val isParticipating = event.participants.any { it.uid == currentUserUid }
                         EventItem(
                             event = event,
                             isUserEvent = isUserEvent,

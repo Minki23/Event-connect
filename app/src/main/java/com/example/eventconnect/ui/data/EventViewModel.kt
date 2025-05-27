@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.example.eventconnect.models.Event
+import com.example.eventconnect.models.UserSimple
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
@@ -49,9 +51,9 @@ class EventViewModel(private val auth: FirebaseAuth,
     private val _isSaving = mutableStateOf(false)
     val isSaving: State<Boolean> = _isSaving
 
-    val _eventParticipants = MutableStateFlow<List<SimpleUser>>(emptyList())
+    val _eventParticipants = MutableStateFlow<List<UserSimple>>(emptyList())
 
-    val _userFriends = MutableStateFlow<List<SimpleUser>>(emptyList())
+    val _userFriends = MutableStateFlow<List<UserSimple>>(emptyList())
     val friends = _userFriends.asStateFlow()
 
     private val _isUploadingPhoto = mutableStateOf(false)
@@ -81,11 +83,11 @@ class EventViewModel(private val auth: FirebaseAuth,
                     runCatching {
                         val participantsData = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
                         val participants = participantsData.map { map ->
-                            SimpleUser(
-                                userId = map["userId"] as? String,
-                                name = map["name"] as? String,
-                                email = map["email"] as? String,
-                                photoUrl = map["photoUrl"] as? String
+                            UserSimple(
+                                uid = (map["uid"] as? String).toString(),
+                                displayName = (map["name"] as? String).toString(),
+                                email = (map["email"] as? String).toString(),
+                                photoUrl = (map["photoUrl"] as? String).toString()
                             )
                         }
                         Event(
@@ -102,7 +104,7 @@ class EventViewModel(private val auth: FirebaseAuth,
                     }.getOrNull()
                 }
                 _events.value = if (_selectedFilter.value == EventFilter.PARTICIPATING) {
-                    all.filter { e -> e.participants.any { it.userId == currentUserUid } }
+                    all.filter { e -> e.participants.any { it.uid == currentUserUid } }
                 } else all
             } catch (_: Exception) {
             } finally {
@@ -122,11 +124,11 @@ class EventViewModel(private val auth: FirebaseAuth,
                 if (doc.exists()) {
                     val participantsData = doc.get("participants") as? List<Map<String, Any>> ?: emptyList()
                     val participants = participantsData.map { map ->
-                        SimpleUser(
-                            userId = map["userId"] as? String,
-                            name = map["name"] as? String,
-                            email = map["email"] as? String,
-                            photoUrl = map["photoUrl"] as? String
+                        UserSimple(
+                            uid = (map["uid"] as? String).toString(),
+                            displayName = (map["displayName"] as? String).toString(),
+                            email = (map["email"] as? String).toString(),
+                            photoUrl = (map["photoUrl"] as? String).toString()
                         )
                     }
                     val photoUrls = doc.get("photoUrls") as? List<String> ?: emptyList()
@@ -162,7 +164,7 @@ class EventViewModel(private val auth: FirebaseAuth,
         navController: NavController,
         scope: CoroutineScope,
         selectedImageUri: Uri?,
-        participants: List<SimpleUser>
+        participants: List<UserSimple>
     ) {
         val currentUser = FirebaseAuth.getInstance().currentUser
         val userId = currentUser?.uid ?: ""
@@ -186,8 +188,8 @@ class EventViewModel(private val auth: FirebaseAuth,
                 }
                 val participantsMap = participants.map {
                     mapOf(
-                        "userId" to it.userId,
-                        "name" to it.name,
+                        "uid" to it.uid,
+                        "displayName" to it.displayName,
                         "email" to it.email,
                         "photoUrl" to it.photoUrl
                     )
@@ -259,7 +261,7 @@ class EventViewModel(private val auth: FirebaseAuth,
         onError: (String) -> Unit,
     ) {
         val event = Event(eventId, name, location, description, date, time, imageUrl, host.uid, listOf(
-            SimpleUser(host.uid, host.displayName, host.email, host.photoUrl.toString())
+            UserSimple(host.uid, host.displayName.toString(), host.email.toString(), host.photoUrl.toString())
         ))
         db.collection("events")
             .document(eventId)
@@ -293,7 +295,7 @@ class EventViewModel(private val auth: FirebaseAuth,
         )
     }
 
-    fun uploadPhotoForEvent(eventId: String, uri: Uri, context: Context, onSuccess: () -> Unit) {
+    fun uploadPhotoForEvent(eventId: String, uri: Uri, context: Context) {
         _isUploadingPhoto.value = true
         viewModelScope.launch {
             try {
@@ -313,7 +315,6 @@ class EventViewModel(private val auth: FirebaseAuth,
                 }
 
                 _isUploadingPhoto.value = false
-                onSuccess()
             } catch (e: Exception) {
                 Toast.makeText(context, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 _isUploadingPhoto.value = false
@@ -342,11 +343,11 @@ class EventViewModel(private val auth: FirebaseAuth,
                     .get()
                     .addOnSuccessListener { userDocs ->
                         val friends = userDocs.map {
-                            SimpleUser(
-                                userId = it.getString("uid"),
-                                name = it.getString("displayName"),
-                                email = it.getString("email"),
-                                photoUrl = it.getString("photoUrl")
+                            UserSimple(
+                                uid = it.getString("uid").toString(),
+                                displayName = it.getString("displayName").toString(),
+                                email = it.getString("email").toString(),
+                                photoUrl = it.getString("photoUrl").toString()
                             )
                         }
                         _userFriends.value = friends
@@ -371,11 +372,11 @@ class EventViewModel(private val auth: FirebaseAuth,
             .get()
             .addOnSuccessListener { documents ->
                 val users = documents.mapNotNull {
-                    SimpleUser(
-                        userId = it.getString("uid"),
-                        name = it.getString("displayName"),
-                        email = it.getString("email"),
-                        photoUrl = it.getString("photoUrl")
+                    UserSimple(
+                        uid = it.getString("uid").toString(),
+                        displayName = it.getString("displayName").toString(),
+                        email = it.getString("email").toString(),
+                        photoUrl = it.getString("photoUrl").toString()
                     )
                 }
                 _eventParticipants.value = users

@@ -100,7 +100,7 @@ fun MainScreen(onGoogleLogin: () -> Unit) {
                                 .padding(end = 56.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "Edit Event")
+                            Text(text = "Event Details")
                         }
                     },
                     navigationIcon = {
